@@ -2,7 +2,9 @@
 .env
 *.key
 **/api_key*
-llm_baseline_results.json
+
+# stray results file written outside results/
+/llm_baseline_results.json
 
 # --- Corpora and derived data (not redistributed; see yiddish_parser/data/README.md) ---
 yiddish_parser/data/raw/
@@ -52,6 +54,12 @@ env/
 Thumbs.db
 *.swp
 *~
+
+# Keep the committed evidence trail in results/ (see results/README.md)
+!results/
+!results/*.md
+!results/*.txt
+!results/*.json
 
 # --- Local scratch ---
 scratch/

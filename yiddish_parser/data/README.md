@@ -3,6 +3,10 @@
 No corpus data is redistributed in this repository. This file documents how to
 obtain each corpus and rebuild the exact files the training scripts expect.
 
+For the full end-to-end procedure on the Slurm cluster, follow
+[RUNBOOK.md](../../RUNBOOK.md) instead — it wraps these steps in order, with
+verification after each one.
+
 ## Expected layout after rebuilding
 
 ```

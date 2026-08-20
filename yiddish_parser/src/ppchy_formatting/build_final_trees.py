@@ -1,3 +1,4 @@
+import argparse
 import json
 import os
 import re
@@ -34,13 +35,30 @@ def clean_and_replace(tree_str, leaves):
     return tree_str
 
 def main():
-    json_dir = "data/raw/ppchyprep/out/data/json"
-    output_path = "data/processed/ppchy_final_trees.txt"
-    
+    parser = argparse.ArgumentParser(
+        description="Convert ppchyprep JSON output into Hebrew-script bracketed trees.")
+    parser.add_argument("--json-dir", default="data/raw/ppchyprep/out/data/json")
+    parser.add_argument("--output", default="data/processed/ppchy_final_trees.txt")
+    parser.add_argument(
+        "--only", nargs="*", default=None,
+        help="Restrict to PPCHY components whose filename contains any of these "
+             "strings, e.g. --only hirshbein olsvanger to follow Kulick et al. "
+             "(2022). Default: every .json file in the directory. Whatever you "
+             "choose here must match what the report claims.")
+    args = parser.parse_args()
+
+    json_dir = args.json_dir
+    output_path = args.output
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+
     all_trees = []
-    
+    used_files = []
+
     for filename in sorted(os.listdir(json_dir)):
+        if args.only and not any(key.lower() in filename.lower() for key in args.only):
+            continue
         if filename.endswith(".json"):
+            used_files.append(filename)
             with open(os.path.join(json_dir, filename), 'r') as f:
                 data = json.load(f)
                 for entry in data:
@@ -52,7 +70,8 @@ def main():
         for tree in all_trees:
             f.write(tree + "\n")
     
-    print(f"✅ Created {len(all_trees)} Hebrew-script trees in {output_path}")
+    print(f"Created {len(all_trees)} Hebrew-script trees in {output_path}")
+    print(f"Source files used ({len(used_files)}): {', '.join(used_files)}")
 
 if __name__ == "__main__":
     main()

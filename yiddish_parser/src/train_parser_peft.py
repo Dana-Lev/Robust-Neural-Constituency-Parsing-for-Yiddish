@@ -135,12 +135,25 @@ def set_seed(seed: int):
 
 
 def resolve_output_dir(args) -> str:
+    """One directory per experiment *cell*.
+
+    Every setting that distinguishes two runs must appear in the name, or a
+    later run silently overwrites an earlier one -- e.g. the spm and maxmatch
+    backends are both ``--mode bpe-dropout``, and a seed sweep repeats the same
+    mode three times.
+    """
     if args.output_dir:
         return args.output_dir
-    suffix = args.mode
+    parts = [args.mode]
     if args.mode in ("adapters", "both"):
-        suffix = f"{suffix}_{args.adapter_type}"
-    return f"./output/parser_{suffix}"
+        parts.append(args.adapter_type)
+    if args.mode in ("bpe-dropout", "both"):
+        parts.append(args.backend)
+    if args.n_bert_layers != 4:
+        parts.append(f"L{args.n_bert_layers}")
+    if args.seed != 1:
+        parts.append(f"seed{args.seed}")
+    return "./output/parser_" + "_".join(parts)
 
 
 def run_selftest(args):

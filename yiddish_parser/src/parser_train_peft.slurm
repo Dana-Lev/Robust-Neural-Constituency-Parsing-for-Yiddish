@@ -26,31 +26,48 @@ mkdir -p logs
 #   pip install "peft>=0.7.0" sentencepiece
 
 # --- CONFIG ---
-# Point at the raw Yiddish XLM-R to measure the PEFT contribution on its own,
-# or at ./output/phase2_trained/checkpoint-6000 to stack it on FOCUS+DAPT.
-ENCODER="skulick/xlmb-ybc-ck05"
-MODE="${1:-both}"                 # baseline | bpe-dropout | adapters | both
-ADAPTER_TYPE="${2:-lora}"         # lora | bottleneck | both
+# Usage: sbatch src/parser_train_peft.slurm [mode] [adapter-type] [backend]
+#   mode         : baseline | bpe-dropout | adapters | both      (default: both)
+#   adapter-type : lora | bottleneck | both                      (default: lora)
+#   backend      : auto | spm | maxmatch                         (default: maxmatch)
+#
+# ENCODER defaults to the raw Yiddish XLM-R, which measures the PEFT
+# contribution on its own. Override it to stack on FOCUS+DAPT, e.g.
+#   ENCODER=./output/phase2_trained/checkpoint-6000 sbatch ...
+ENCODER="${ENCODER:-skulick/xlmb-ybc-ck05}"
+MODE="${1:-both}"
+ADAPTER_TYPE="${2:-lora}"
+BACKEND="${3:-maxmatch}"
+SEED="${SEED:-1}"
+ADAPTER_LR="${ADAPTER_LR:-3e-4}"
+N_BERT_LAYERS="${N_BERT_LAYERS:-4}"
 
-echo "Mode=$MODE  AdapterType=$ADAPTER_TYPE  Encoder=$ENCODER"
+echo "Mode=$MODE  AdapterType=$ADAPTER_TYPE  Backend=$BACKEND  Seed=$SEED  Encoder=$ENCODER"
 
 # Sanity check the segmentation sampler before burning GPU hours.
-python src/train_parser_peft.py --mode "$MODE" --encoder-path "$ENCODER" --selftest
+python src/train_parser_peft.py --mode "$MODE" --encoder-path "$ENCODER" \
+    --backend "$BACKEND" --selftest
 
+OUTPUT_DIR="${OUTPUT_DIR:-}"
+EXTRA=""
+if [ -n "$OUTPUT_DIR" ]; then EXTRA="--output-dir $OUTPUT_DIR"; fi
+
+# shellcheck disable=SC2086
 python src/train_parser_peft.py \
     --mode "$MODE" \
     --adapter-type "$ADAPTER_TYPE" \
     --encoder-path "$ENCODER" \
-    --backend maxmatch \
+    --backend "$BACKEND" \
     --p 0.1 \
     --word-p 1.0 \
     --fix-len 32 \
     --lora-r 16 \
     --lora-alpha 32 \
-    --adapter-lr 3e-4 \
+    --adapter-lr "$ADAPTER_LR" \
+    --n-bert-layers "$N_BERT_LAYERS" \
     --batch-size 2000 \
     --epochs 100 \
     --patience 10 \
-    --seed 1
+    --seed "$SEED" $EXTRA
 
 echo "Job Finished."

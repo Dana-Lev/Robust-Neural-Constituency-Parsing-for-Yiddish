@@ -7,6 +7,10 @@ Dana Lev · Ayala May
 
 ---
 
+> **Building this from scratch?** [RUNBOOK.md](RUNBOOK.md) is the step-by-step
+> guide: cluster setup, data construction, the experiment grid, evaluation, and
+> pushing results back to git.
+
 ## Research question
 
 Yiddish is fragmented aggressively by multilingual subword tokenizers. Kulick et
@@ -44,6 +48,10 @@ this zero-shot?** `testing.py` measures that directly.
 | `report/` | ACL-format LaTeX report (`main.tex`, `references.bib`, ACL style files) |
 | `PLAN.md` | Work plan and division of labour through the submission deadline |
 | `yiddish_parser/data/README.md` | How to obtain and rebuild the corpora (no corpus data is redistributed here) |
+| `RUNBOOK.md` | Step-by-step build, train, evaluate and publish procedure for the Slurm cluster |
+| `scripts/build_ppchy_data.sh` | One command from ppchyprep JSON to SuPar-ready splits |
+| `scripts/dataset_stats.py` | Sentence/token counts, label distribution and subword fertility per split |
+| `results/` | Committed evidence trail: statistics, sanity checks, evaluation output |
 
 Inherited pipeline scripts — `train_parser.py`, `inject_vocab.py`, `run_mlm.py`,
 `eval_token_usage.py`, `clean_tree_data.py`, `split_supar_data.py`,
@@ -84,8 +92,9 @@ On the Slurm cluster (set `NLP_STORAGE` to your course storage directory first):
 sbatch src/parser_train_peft.slurm both lora
 ```
 
-Each mode writes to its own `./output/parser_<mode>[_<adapter-type>]/`, so runs
-never overwrite each other.
+Each cell writes to its own directory, named after every setting that
+distinguishes it — mode, adapter type, backend, layer count, seed — so no two
+runs of the grid can overwrite each other's checkpoints.
 
 ### Evaluation
 
