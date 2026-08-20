@@ -1,0 +1,13 @@
+# Parser stack. supar 1.1.4 is pinned: every runtime patch in
+# subword_regularization.py and language_adapters.py is written against the
+# internals of this exact version (see PEFT_INTEGRATION.md).
+supar==1.1.4
+torch>=1.13
+transformers>=4.30
+peft>=0.7.0
+sentencepiece>=0.1.99
+nltk>=3.8
+tqdm
+
+# Frontier-LLM baseline (testing.py)
+google-genai>=0.3.0
