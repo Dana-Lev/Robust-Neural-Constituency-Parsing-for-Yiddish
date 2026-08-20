@@ -1,0 +1,318 @@
+% =====================================================================
+% NLP Final Project report -- ACL format (course guidelines, 2025b)
+%
+% Compile: pdflatex main && bibtex main && pdflatex main && pdflatex main
+% (or upload the whole report/ folder to Overleaf).
+%
+% HARD CONSTRAINTS from the guidelines:
+%   * <= 8 pages, NOT counting references and appendix
+%   * ACL template, \citet / \citep for all citations
+%   * must include an "AI Disclosure and Reflection" section
+%   * figures as PDF (not png/jpeg), large fonts
+%
+% Every \todo{...} marks something you must write or fill in yourselves.
+% Delete the \todo macro uses before submission.
+% =====================================================================
+\documentclass[11pt]{article}
+
+\usepackage{acl}            % remove [review] style options for final version
+\usepackage{times}
+\usepackage{latexsym}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{microtype}
+\usepackage{inconsolata}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{xcolor}
+
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+% NOTE on Yiddish examples: pdflatex + the ACL template do not handle
+% right-to-left Hebrew script well. For example sentences/trees, either
+% (a) use YIVO romanization in the text, or (b) render the tree as a
+% standalone PDF figure (e.g. with a separate XeLaTeX doc) and \includegraphics it.
+
+\title{Robust Neural Constituency Parsing for Yiddish via \\
+       Subword Regularization and Parameter-Efficient Fine-Tuning}
+
+\author{Dana Lev \\
+  Tel Aviv University \\
+  \texttt{levdana1@gmail.com} \\\And
+  Ayala May \\
+  Tel Aviv University \\
+  \texttt{ayalamay@gmail.com} \\}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+% 4-8 sentences: problem, gap, your two approaches, the LLM control
+% experiment, headline numbers, main conclusion.
+\todo{Write last, after all results are in. Suggested skeleton:
+(1) Yiddish suffers subword fragmentation in multilingual encoders, which prior
+work attacked with vocabulary injection and continued pre-training;
+(2) we test two \emph{dynamic, parameter-efficient} alternatives -- subword
+regularization and MAD-X-style language adapters -- that modify no vocabulary
+and need no pre-training; (3) we additionally test whether frontier LLMs
+already solve PPCHY parsing zero-/few-shot; (4) headline Labeled F1 numbers;
+(5) the takeaway about what frozen encoders actually need.}
+\end{abstract}
+
+% =====================================================================
+\section{Introduction}
+% Rubric: research question (10pt) is judged largely from here.
+% Set up: (a) the problem, (b) high-level idea, (c) main findings,
+% (d) explicit contribution list. Refer forward to the results figure.
+\todo{Introduction. Cover, in order:
+(1) Yiddish as a low-resource, orthographically unstable language; the gap
+identified by \citet{kulick-etal-2022-part} -- a POS tagger exists, a parser
+was missing.
+(2) The previous course project \citep{halfon-boiman-2026-yiddish} built the
+first neural constituency parser for Yiddish and found that \emph{static}
+vocabulary injection (FOCUS) + continued pre-training (DAPT) activates new
+tokens but does not improve parsing F1.
+(3) Our research question: can the subword-fragmentation bottleneck be
+addressed \emph{dynamically} and parameter-efficiently -- BPE-dropout-style
+subword regularization \citep{provilkov-etal-2020-bpe} and language adapters
+\citep{pfeiffer-etal-2020-mad} -- without touching the vocabulary or
+pre-training? And, as a control demanded by the pace of the field: do frontier
+LLMs already parse historical Yiddish, making a custom parser unnecessary?
+(4) Contributions bullet list.}
+
+% =====================================================================
+\section{Background and Related Work}
+% Rubric: literature review is 20pt. Critically evaluate, identify the gap.
+\subsection{Yiddish NLP and the PPCHY}
+\todo{Summarize \citet{kulick-etal-2022-part}: YBC corpus, PPCHY treebank,
+their finding that embeddings absorb spelling variation, and their explicit
+call for a parser. Describe PPCHY annotation style (IP-MAT, function tags like
+NP-SBJ) briefly -- the reader must understand what ``Labeled F1'' is over.}
+
+\subsection{Subword Fragmentation and its Remedies}
+\todo{The ``tokenization tax'': XLM-R \citep{conneau-etal-2020-unsupervised}
+fragments Hebrew-script Yiddish. Two remedy families:
+(a) \emph{static}: vocabulary injection with FOCUS
+\citep{dobler-de-melo-2023-focus} + DAPT, as done by
+\citet{halfon-boiman-2026-yiddish}, which yielded no downstream parsing gain;
+(b) \emph{dynamic}: subword regularization -- BPE-dropout
+\citep{provilkov-etal-2020-bpe} for BPE and Kudo sampling
+\citep{kudo-2018-subword} for Unigram tokenizers like XLM-R's. Point out the
+gap: (b) has not been tested for low-resource constituency parsing with frozen
+encoders.}
+
+\subsection{Parameter-Efficient Fine-Tuning}
+\todo{Adapters \citep{houlsby-etal-2019-parameter}, the MAD-X framework of
+language + task adapters \citep{pfeiffer-etal-2020-mad}, and LoRA
+\citep{hu-etal-2022-lora}. Why PEFT is attractive here: 12GB GPUs, frozen
+192M-parameter embedding matrix, course compute limits.}
+
+\subsection{Neural Constituency Parsing}
+\todo{One paragraph on the chart-based CRF parser of
+\citet{zhang-etal-2020-fast} (SuPar): span scoring with biaffine attention,
+CKY/MBR decoding. NOTE: it is chart-based, not transition-based -- keep the
+terminology exact.}
+
+% =====================================================================
+\section{Methodology}
+% Rubric: methodology is 20pt -- data, baselines, no leakage, seeds.
+
+\subsection{Data}
+\todo{PPCHY subset (Hirshbein + Olsvanger), script conversion via ppchyprep,
+the SuPar-ready splits. Give the statistics table below (verify counts against
+your actual files!) and one romanized example tree or a PDF tree figure.}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+\textbf{Split} & \textbf{Sentences} & \textbf{Tokens} \\
+\midrule
+Train & \todo{15{,}394?} & \todo{...} \\
+Dev   & \todo{855?}      & \todo{...} \\
+Test  & \todo{856?}      & \todo{...} \\
+\bottomrule
+\end{tabular}
+\caption{PPCHY data statistics (SuPar-ready splits). \todo{Verify from
+\texttt{data/processed/supar\_ready/} -- do not copy numbers from the previous
+project without checking.}}
+\label{tab:data}
+\end{table}
+
+\subsection{Base Parser}
+\todo{SuPar CRF constituency parser over the Yiddish-pretrained XLM-R
+checkpoint (\texttt{skulick/xlmb-ybc-ck05}). Entire backbone frozen (including
+the $250002 \times 768 \approx 192$M embedding matrix); trainable: the
+$\sim$8M-parameter parser head (+ scalar mix over the top $k$ encoder layers).
+State the exact trainable-parameter counts from the training logs
+(\texttt{describe\_trainable} prints them).}
+
+\subsection{Approach 1: Subword Regularization}
+\todo{Describe: XLM-R uses SentencePiece \emph{Unigram}, so BPE-dropout is not
+literally applicable; we use (a) Kudo lattice sampling (\texttt{spm} backend)
+and (b) a stochastic longest-match analogue of BPE-dropout (\texttt{maxmatch}
+backend). Segmentation is resampled per batch in the training collator only;
+dev/test stay deterministic (no train/test skew, no leakage). Give the
+fertility statistics from the \texttt{--selftest} output as a small table.}
+
+\subsection{Approach 2: Language Adapters}
+\todo{MAD-X-style adapters in a fully frozen backbone: LoRA on query/value
+projections ($r{=}16$, $\alpha{=}32$) and Pfeiffer bottleneck adapters
+(reduction 16, zero-initialized up-projection = identity at step 0). Adapter
+learning rate handled separately (3e-4 vs.\ SuPar's 5e-5 encoder rate) --
+explain why. Report adapter parameter counts ($\sim$1--2M).}
+
+\subsection{Frontier-LLM Control Experiment}
+% This answers the instructor's question: is a custom model still needed?
+\todo{Describe the LLM baseline (\texttt{testing.py}): $N$ sentences sampled
+from the PPCHY \emph{test} split, prompted zero-shot and few-shot ($k{=}3$
+exemplars from the \emph{train} split) to produce PPCHY-style trees with the
+gold tokenization given; strict decoding at temperature 0. Evaluation:
+EVALB-style Labeled/Unlabeled F1 (preterminals excluded, TOP/punctuation
+deleted, co-indexation stripped -- the same conventions as the SuPar
+evaluation), plus syntactic validity rate and token fidelity rate. Models:
+Gemini \citep{geminiteam-2023-gemini}; optionally GPT-4-class
+\citep{openai-2023-gpt4}. State the exact model IDs and dates -- API models
+change over time.}
+
+% =====================================================================
+\section{Experimental Setup}
+\todo{One code path for all cells (\texttt{train\_parser\_peft.py}), identical
+seeding; modes: baseline / bpe-dropout / adapters / both. Hyperparameters to
+the appendix. Mention: seed(s) used -- if compute allows, run the main cells
+with 3 seeds and report mean$\pm$std (the rubric explicitly asks you to
+account for randomness); early stopping on dev only; sanity overfitting check
+on a small subset (the rubric asks for it -- run one job on 100 sentences and
+show the model reaches $\sim$100\% train F1).}
+
+% =====================================================================
+\section{Results}
+% Rubric: results & discussion 20pt. Give full numbers, then interpret.
+
+\begin{table*}[t]
+\centering
+\small
+\begin{tabular}{llrrrr}
+\toprule
+\textbf{Model} & \textbf{Trainable params} & \textbf{UF} & \textbf{LF} & \textbf{UCM} & \textbf{LCM} \\
+\midrule
+\multicolumn{6}{l}{\emph{Reference (previous project, static adaptation)} \citep{halfon-boiman-2026-yiddish}} \\
+\quad Frozen baseline            & $\sim$8M  & 90.83 & 83.81 & 63.55 & 50.93 \\
+\quad FOCUS + DAPT               & $\sim$8M  & 90.16 & 83.02 & 62.50 & 49.42 \\
+\midrule
+\multicolumn{6}{l}{\emph{This work (dynamic, parameter-efficient adaptation)}} \\
+\quad Baseline (our run)         & \todo{}   & \todo{} & \todo{} & \todo{} & \todo{} \\
+\quad + Subword reg.\ (spm)      & \todo{}   & \todo{} & \todo{} & \todo{} & \todo{} \\
+\quad + Subword reg.\ (maxmatch) & \todo{}   & \todo{} & \todo{} & \todo{} & \todo{} \\
+\quad + Adapters (LoRA)          & \todo{}   & \todo{} & \todo{} & \todo{} & \todo{} \\
+\quad + Adapters (bottleneck)    & \todo{}   & \todo{} & \todo{} & \todo{} & \todo{} \\
+\quad + Both                     & \todo{}   & \todo{} & \todo{} & \todo{} & \todo{} \\
+\bottomrule
+\end{tabular}
+\caption{Constituency parsing on the PPCHY test set (\%). UF/LF = unlabeled /
+labeled F1; UCM/LCM = complete-match rates. \todo{Fill from evaluate\_peft.py
+output; add $\pm$std if you ran multiple seeds. Note in the caption that your
+baseline configuration (n\_bert\_layers, pooling) may differ from the
+reference rows -- state it explicitly.}}
+\label{tab:main}
+\end{table*}
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{System} & \textbf{Valid} & \textbf{Tok} & \textbf{LF} & \textbf{UF} \\
+\midrule
+Gemini zero-shot   & \todo{} & \todo{} & \todo{} & \todo{} \\
+Gemini 3-shot      & \todo{} & \todo{} & \todo{} & \todo{} \\
+\midrule
+SuPar parser (ours) & 100 & 100 & \todo{} & \todo{} \\
+\bottomrule
+\end{tabular}
+\caption{Frontier-LLM control on \todo{$N$} PPCHY test sentences (\%).
+Valid = well-formed bracketing rate; Tok = token fidelity rate.
+\todo{Fill from llm\_baseline\_results.json. State model ID + access date.}}
+\label{tab:llm}
+\end{table}
+
+\todo{Present: (1) the main ablation table; (2) the fertility/segmentation
+variation statistics; (3) the LLM control table; (4) a training-curve or
+results-summary figure as PDF. For every table, one paragraph of what it
+shows.}
+
+% =====================================================================
+\section{Discussion}
+\todo{Interpret, don't repeat. Expected storyline (adjust to actual numbers):
+(1) If subword regularization and adapters land near the baseline: three
+independent interventions (static injection, regularization, PEFT) now all
+fail to move frozen-encoder parsing F1 -- strong evidence that constituency
+structure is resilient to subword fragmentation, extending
+\citet{halfon-boiman-2026-yiddish}'s null result. Emphasize the cost side:
+PEFT reaches the same F1 with $\sim$1--2M trainable parameters and zero
+pre-training.
+(2) If something helps: quantify, and relate to which failure mode it fixes.
+(3) LLM control: relate the zero-/few-shot numbers to the trained parser's
+83+ LF. If the gap is large, the custom model is justified; discuss \emph{why}
+LLMs struggle (scheme mismatch vs.\ language competence -- token fidelity and
+unlabeled F1 help separate these).
+(4) Negative results are explicitly valued by the rubric if analyzed well.}
+
+% =====================================================================
+\section{Conclusion}
+\todo{3-5 sentences: question, method, answer, one-sentence outlook.}
+
+\section*{Limitations}
+\todo{Historical text only; single language; one encoder; small test sample
+for the LLM control (API cost); one/few seeds if that ends up true; LLM
+results depend on prompt + model version and may not be stable over time.}
+
+% Required by the course guidelines (transparency, not graded).
+\section*{AI Disclosure and Reflection}
+\todo{Be specific and honest -- the guidelines require how/why/where AI was
+used, which tools/models, and a reflection on how it went. Cover at least:
+brainstorming at proposal stage (Gemini), coding assistance for the PEFT
+integration and the LLM-baseline script (Claude), LaTeX/formatting help, and
+what you verified yourselves. Per the course AI policy, you own every claim in
+this paper.}
+
+% =====================================================================
+\bibliography{references}
+
+\appendix
+
+\section{Hyperparameters}
+\label{app:hyper}
+\begin{table}[h]
+\centering
+\small
+\begin{tabular}{lr}
+\toprule
+\textbf{Hyperparameter} & \textbf{Value} \\
+\midrule
+Batch size (tokens)        & 2000 \\
+Epochs (max / patience)    & 100 / 10 \\
+Encoder LR                 & 5e-5 \\
+Head LR multiplier         & 20 \\
+Adapter LR                 & \todo{3e-4 (swept 1e-4/3e-4/1e-3)} \\
+LoRA $r$ / $\alpha$ / dropout & 16 / 32 / 0.1 \\
+Bottleneck reduction       & 16 \\
+Subword reg.\ $p$ / $\alpha$ / word-$p$ & 0.1 / 0.1 / 1.0 \\
+fix\_len                   & 32 \\
+n\_bert\_layers / pooling  & \todo{4 / mean (or 12)} \\
+Seed(s)                    & \todo{1 (+2,3?)} \\
+\bottomrule
+\end{tabular}
+\caption{Training hyperparameters.}
+\end{table}
+
+\section{LLM Prompts}
+\todo{Reproduce the exact zero-shot and few-shot prompt templates from
+\texttt{testing.py}, and one full example of model input/output.}
+
+\section{Example Parses}
+\todo{Optional: one gold vs.\ predicted tree (as PDF figures), one Gemini
+failure case.}
+
+\end{document}
