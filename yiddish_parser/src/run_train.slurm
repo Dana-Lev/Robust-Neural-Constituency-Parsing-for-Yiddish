@@ -10,7 +10,8 @@
 #SBATCH --signal=USR1@90              
 
 # --- 1. TAU STORAGE SETUP ---
-BASE_DIR="/vol/joberant_nobck/data/NLP_368307701_2526a/omriboiman"
+# Course storage (guidelines 2.2): set NLP_STORAGE to your own directory.
+BASE_DIR="${NLP_STORAGE:-/home/morg/NLP_2526b/$USER}"
 export HF_HOME="$BASE_DIR/cache"
 export XDG_CACHE_HOME="$BASE_DIR/cache"
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
@@ -18,6 +19,8 @@ export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 # --- 2. ENVIRONMENT ---
 source "$BASE_DIR/anaconda3/etc/profile.d/conda.sh"
 conda activate yiddish
+
+mkdir -p logs
 
 # --- 3. CONFIGURATION ---
 MODEL_DIR="./output/phase1_focus_model"

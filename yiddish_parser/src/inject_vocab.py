@@ -1,3 +1,5 @@
+# Course storage (guidelines 2.2): set NLP_STORAGE to your own directory,
+# e.g. /home/morg/NLP_2526b/<your user name>.
 import os
 import torch
 from transformers import AutoTokenizer, AutoModelForMaskedLM
@@ -8,15 +10,17 @@ ORIGINAL_MODEL = "skulick/xlmb-ybc-ck05"
 VOCAB_FILE = "./data/processed/yiddish_vocab.txt"
 OUTPUT_DIR = "./output/phase1_focus_model"
 TARGET_NEW_TOKENS = 2000
+STORAGE = os.environ.get("NLP_STORAGE", os.path.expanduser("~"))
 
 # 📍 DIRECT PATHS (The simple way)
 # 1. Your 4.5GB FastText Brain
-FASTTEXT_PATH = "/vol/joberant_nobck/data/NLP_368307701_2526a/omriboiman/fasttext_models/cc.yi.300.bin"
+FASTTEXT_PATH = os.environ.get(
+    "FASTTEXT_PATH", os.path.join(STORAGE, "fasttext_models", "cc.yi.300.bin"))
 # 2. Your JSONL Data (Created in Step 1)
 DATA_PATH = "./data/processed/ybc_focus.jsonl" 
 
 # 🛡️ Cache Safety
-CACHE_DIR = "/vol/joberant_nobck/data/NLP_368307701_2526a/omriboiman/cache"
+CACHE_DIR = os.environ.get("HF_HOME", os.path.join(STORAGE, "cache"))
 
 def run_official_focus():
     print(f"🚀 Starting FOCUS Injection (Standard Mode)...")
