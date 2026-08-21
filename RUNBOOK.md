@@ -26,10 +26,41 @@ The login host is `slurm-client.cs.tau.ac.il`, which routes you to one of
 
 - **Off campus?** CS servers are not reachable from outside the university.
   Connect to the **TAU VPN** first.
-- **Host key error on connect?** Remove or rename `~/.ssh/known_hosts`.
+- **"Remote host key has changed"?** Expected, and it will recur. The pool name
+  routes you to one of `c-001`…`c-010`, each with a *different* host key, so a
+  single stored key breaks as soon as you land on another node. Clear the stale
+  entry with `ssh-keygen -R slurm-client.cs.tau.ac.il`, or fix it permanently by
+  trusting all ten at once (`known_hosts` accepts several keys per name):
+
+```bash
+ssh-keyscan -T 8 -t ed25519,rsa,ecdsa \
+    slurm-client.cs.tau.ac.il c-00{1..9}.cs.tau.ac.il c-010.cs.tau.ac.il \
+  | tee /tmp/slurm_keys \
+  | sed -E 's/^c-[0-9]+\.cs\.tau\.ac\.il/slurm-client.cs.tau.ac.il/' >> ~/.ssh/known_hosts
+cat /tmp/slurm_keys >> ~/.ssh/known_hosts && sort -u ~/.ssh/known_hosts -o ~/.ssh/known_hosts
+```
 
 If the password itself is rejected, that is a TAU/CS account issue — contact the
 CS system team; it is not something any project document can supply.
+
+A worthwhile `~/.ssh/config` block — the `User` line is the one people forget,
+and without it SSH sends your *local* username and fails before the password is
+even considered. `ControlMaster` means you type the password once and every
+later `ssh`/`scp` reuses that connection:
+
+```
+Host slurm slurm-client.cs.tau.ac.il
+  HostName slurm-client.cs.tau.ac.il
+  User <your-tau-username>
+  PreferredAuthentications keyboard-interactive,password
+  IdentitiesOnly yes
+  ControlMaster auto
+  ControlPath ~/.ssh/controlmasters/%r@%h-%p
+  ControlPersist 10m
+  ServerAliveInterval 60
+```
+
+(`mkdir -p ~/.ssh/controlmasters` first.) Then `ssh slurm` is enough.
 
 ```bash
 ssh <user>@slurm-client.cs.tau.ac.il
