@@ -14,12 +14,25 @@ Conventions used below:
 ## Step 0 — Cluster access (do this first, it can take a day)
 
 1. Fill the Slurm request form: <https://www.cs.tau.ac.il/system/SlurmRequestForm>
-   In the PI/lab field write **"NLP class 2025/2026"**.
+   In the PI/lab field write **"NLP class 2025/2026"**. You must be in the CS
+   Slurm groups before login will work; a TA can request the course partition.
 2. Read the usage notes: <https://www.cs.tau.ac.il/system/slurm>
-3. Log in and confirm your storage exists:
+3. Log in and confirm your storage exists.
+
+**Credentials.** There is no special cluster password: you log in with your own
+**TAU username and password** ("University Credentials", per the page above).
+The login host is `slurm-client.cs.tau.ac.il`, which routes you to one of
+`c-001`…`c-010`. Two things that block people on the first attempt:
+
+- **Off campus?** CS servers are not reachable from outside the university.
+  Connect to the **TAU VPN** first.
+- **Host key error on connect?** Remove or rename `~/.ssh/known_hosts`.
+
+If the password itself is rejected, that is a TAU/CS account issue — contact the
+CS system team; it is not something any project document can supply.
 
 ```bash
-ssh <user>@nova.cs.tau.ac.il
+ssh <user>@slurm-client.cs.tau.ac.il
 export STORAGE=/home/morg/NLP_2526b/$USER
 mkdir -p "$STORAGE" && df -h "$STORAGE" && sinfo -p studentkillable
 ```
@@ -288,7 +301,7 @@ splits down to your Mac:
 ```bash
 cd ~/Desktop/Robust-Neural-Constituency-Parsing-for-Yiddish
 mkdir -p yiddish_parser/data/processed/supar_ready
-scp '<user>@nova.cs.tau.ac.il:/home/morg/NLP_2526b/<user>/Robust-Neural-Constituency-Parsing-for-Yiddish/yiddish_parser/data/processed/supar_ready/*.txt' \
+scp '<user>@slurm-client.cs.tau.ac.il:/home/morg/NLP_2526b/<user>/Robust-Neural-Constituency-Parsing-for-Yiddish/yiddish_parser/data/processed/supar_ready/*.txt' \
     yiddish_parser/data/processed/supar_ready/
 
 export GEMINI_API_KEY="your-key"
