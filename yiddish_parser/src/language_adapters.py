@@ -72,6 +72,10 @@ def install_torch_load_compat(verbose: bool = True):
     globals individually is impractical -- the transform pulls in a long tail of
     classes -- so we restore the previous default for this process.
 
+    It also supplies ``map_location='cpu'`` when no GPU is available, because a
+    checkpoint trained on a GPU stores cuda storage tags that torch will not
+    deserialise onto a CPU-only process unaided.
+
     This is safe here precisely because the checkpoints are our own training
     output. Do not use it on a checkpoint from an untrusted source: full
     unpickling can execute arbitrary code.
@@ -86,6 +90,11 @@ def install_torch_load_compat(verbose: bool = True):
     @functools.wraps(original)
     def load(*args, **kwargs):
         kwargs.setdefault("weights_only", False)
+        if not torch.cuda.is_available():
+            # Checkpoints trained on a GPU carry cuda storage tags, and torch
+            # refuses to deserialise those without a map_location when no GPU is
+            # available. SuPar calls torch.load with the path alone, so supply it.
+            kwargs.setdefault("map_location", "cpu")
         return original(*args, **kwargs)
 
     load._supar_compat = True
