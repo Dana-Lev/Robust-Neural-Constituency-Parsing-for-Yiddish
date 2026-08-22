@@ -509,6 +509,13 @@ LCM, trainable parameters — the trainable count is printed by
 **Check:** `evaluate_peft.py` raises rather than printing a number if the adapter
 configuration is wrong. A crash here is the script protecting you.
 
+If you instead see `UnpicklingError: Weights only load failed`, that is torch
+2.6+ refusing SuPar's checkpoint format: SuPar pickles a `Config` object and
+dill-pickles its whole transform into the `.pt` file, and `torch.load` now
+defaults to `weights_only=True`. Both entrypoints restore the old default for
+their own process, so a `git pull` fixes it. Never apply that workaround to a
+checkpoint you did not train yourself — full unpickling can execute code.
+
 ---
 
 ## Step 8 — Frontier-LLM baseline (run locally, not on the cluster)

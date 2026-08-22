@@ -282,6 +282,7 @@ def train(args):
     print("=" * 66)
 
     set_seed(args.seed)
+    la.install_torch_load_compat(verbose=False)
     device = describe_device(args)
 
     # --- STEP 1: Approach 1. Patch Dataset.build BEFORE any Dataset is created,

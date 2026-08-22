@@ -45,6 +45,9 @@ def main():
     p.add_argument("--buckets", type=int, default=8)
     args = p.parse_args()
 
+    # torch>=2.6 refuses SuPar's checkpoints by default; see the docstring.
+    la.install_torch_load_compat()
+
     if args.adapter_type == "none":
         parser = CRFConstituencyParser.load(args.path)
     else:

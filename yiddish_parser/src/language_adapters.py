@@ -62,6 +62,40 @@ import torch.nn as nn
 ADAPTER_NAME_MARKERS = ("lora_", "language_adapters", "adapter_")
 
 
+def install_torch_load_compat(verbose: bool = True):
+    r"""Let torch>=2.6 read SuPar 1.1.4 checkpoints.
+
+    torch 2.6 flipped ``torch.load``'s ``weights_only`` default to ``True``, which
+    refuses any pickle containing non-tensor globals. SuPar stores a ``Config``
+    object and dill-pickles the whole ``Transform`` (fields and vocabularies) into
+    its ``.pt`` files, so every load raises ``UnpicklingError``. Allow-listing the
+    globals individually is impractical -- the transform pulls in a long tail of
+    classes -- so we restore the previous default for this process.
+
+    This is safe here precisely because the checkpoints are our own training
+    output. Do not use it on a checkpoint from an untrusted source: full
+    unpickling can execute arbitrary code.
+    """
+    import functools
+
+    if getattr(torch.load, "_supar_compat", False):
+        return torch.load
+
+    original = torch.load
+
+    @functools.wraps(original)
+    def load(*args, **kwargs):
+        kwargs.setdefault("weights_only", False)
+        return original(*args, **kwargs)
+
+    load._supar_compat = True
+    torch.load = load
+    if verbose:
+        print("[compat] torch.load: weights_only=False for SuPar checkpoints "
+              f"(torch {torch.__version__})")
+    return load
+
+
 # ====================================================================== #
 # Parameter bookkeeping
 # ====================================================================== #
