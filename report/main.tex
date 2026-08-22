@@ -50,21 +50,21 @@
 \begin{abstract}
 Multilingual encoders fragment Yiddish aggressively, and \citet{kulick-etal-2022-part}
 identified this ``tokenization tax'' as an obstacle to building the syntactic
-tools the language lacks. A prior course project attacked it \emph{statically},
-injecting clean vocabulary and running continued pre-training, and found that
-although the injected tokens became active, constituency parsing did not improve.
-We ask whether the same bottleneck yields to \emph{dynamic} and
-parameter-efficient adaptation instead: stochastic subword re-segmentation during
-training, and MAD-X-style language adapters over a fully frozen encoder, neither
-of which modifies the vocabulary or requires pre-training. Training only
+tools the language lacks. The established remedy is static --- inject clean
+in-language vocabulary and consolidate it with continued pre-training --- which
+rewrites the embedding matrix and presumes the problem lives there. We ask
+whether the bottleneck yields instead to \emph{dynamic}, parameter-efficient
+adaptation: stochastic subword re-segmentation during training, and MAD-X-style
+language adapters over a fully frozen encoder, neither of which modifies the
+vocabulary or requires pre-training. Training only
 $3.3$M of $281.3$M parameters ($1.17\%$), we compare both against a frozen-encoder
 baseline on the Penn Parsed Corpus of Historical Yiddish. \todo{One sentence with
 the headline parser result once the grid finishes.} We additionally test whether
 the problem is already solved by general-purpose models: across two model tiers
 and matched zero-/few-shot conditions, the best frontier configuration reaches
-$54.2$ labeled F1, roughly thirty points below a trained parser, and we show that
-most of the apparent benefit of in-context examples is improved
-instruction-following rather than improved parsing.
+$54.2$ labeled F1, far below a trained parser, and we show that most of the
+apparent benefit of in-context examples is improved instruction-following rather
+than improved parsing.
 \end{abstract}
 
 % =====================================================================
@@ -82,20 +82,17 @@ gold-standard data and careful modelling ``correspondingly more pressing''.
 One obstacle it identified is mundane but consequential. Multilingual subword
 vocabularies were not built for Hebrew-script Yiddish, so words shatter into many
 pieces --- in our data, an average of $2.05$ pieces per word under XLM-R
-\citep{conneau-etal-2020-unsupervised}. A previous course project in this class
-\citep{prior-course-project} attacked this bottleneck \emph{statically}: it
-extracted clean vocabulary from the Jochre corpus \citep{urieli-2025-jochre},
-injected it with FOCUS \citep{dobler-de-melo-2023-focus}, and aligned the new
-embeddings by continued pre-training. The intervention worked on its own terms ---
-injected-token usage rose from $0\%$ to $43.7\%$ --- yet downstream parsing did
-not improve, moving labeled F1 from $83.81$ to $83.02$.
+\citep{conneau-etal-2020-unsupervised}. The established remedy is \emph{static}:
+extract clean in-language vocabulary, inject it into the embedding matrix with a
+method such as FOCUS \citep{dobler-de-melo-2023-focus}, and consolidate the new
+tokens with continued pre-training. This works, but it is expensive --- it rewrites
+the embedding matrix and requires a pre-training run --- and it presumes that the
+fragmentation problem lives in the vocabulary.
 
-That null result invites a sharper question, and it is the one this paper asks.
-Static vocabulary surgery is expensive: it rewrites the embedding matrix and
-requires a pre-training run. Are there \emph{dynamic} interventions that address
-fragmentation at a fraction of the cost, and do they fare any better? We evaluate
-two, chosen because neither touches the physical vocabulary and neither needs
-pre-training:
+This paper asks whether \emph{dynamic} interventions address fragmentation at a
+fraction of that cost, and whether they help constituency parsing at all. We
+evaluate two, chosen because neither touches the physical vocabulary and neither
+needs pre-training:
 
 \begin{enumerate}[itemsep=2pt,topsep=2pt]
 \item \textbf{Subword regularization.} Rather than fixing a better segmentation,
@@ -164,9 +161,10 @@ Remedies split into two families. \emph{Static} approaches change the vocabulary
 FOCUS \citep{dobler-de-melo-2023-focus} initialises newly added tokens as
 weighted combinations of semantically similar existing ones, so that new
 vocabulary starts life inside the model's latent space rather than at random.
-This was applied to Yiddish in a previous course project, with continued
-pre-training to consolidate it, yielding the null downstream result that motivates
-us \citep{prior-course-project}.
+Clean in-language text for such an injection is now available for Yiddish through
+the Jochre corpus \citep{urieli-2025-jochre}. The cost, however, is a rewritten
+embedding matrix plus a pre-training run, and the benefit is predicated on
+fragmentation being an embedding-level problem.
 
 \emph{Dynamic} approaches leave the vocabulary alone and vary the segmentation
 instead. \citet{kudo-2018-subword} samples segmentations from a unigram lattice
@@ -218,10 +216,10 @@ Table~\ref{tab:data} reports the resulting statistics.
 We retain \emph{all} PPCHY components rather than restricting to the two largest
 20th-century texts. This is deliberate: the older material carries the greatest
 orthographic variation, and therefore the heaviest subword fragmentation, which
-is precisely the phenomenon under test here. We note that the previous project describes following the two-text selection
-of \citet{kulick-etal-2022-part}, yet reports split sizes identical to ours
-(15{,}394/855/856), which are only reachable from the full corpus; we therefore
-read those results as whole-corpus numbers \citep{prior-course-project}.
+is precisely the phenomenon under test here. Restricting to the cleaner
+twentieth-century material would remove much of the orthographic variation whose
+effect we are trying to measure, so we keep the corpus whole and report the
+resulting statistics rather than a subset's.
 \todo{Optional: add one romanized example tree as a PDF figure.}
 
 \begin{table}[t]
@@ -437,24 +435,20 @@ explicitly rather than implying more.}
 \toprule
 \textbf{Model} & \textbf{Trainable} & \textbf{UF} & \textbf{LF} & \textbf{UCM} & \textbf{LCM} \\
 \midrule
-\multicolumn{6}{l}{\emph{Reference (previous project, static adaptation)} \citep{prior-course-project}} \\
-\quad Frozen baseline            & $\sim$8M  & 90.83 & 83.81 & 63.55 & 50.93 \\
-\quad FOCUS + DAPT               & $\sim$8M  & 90.16 & 83.02 & 62.50 & 49.42 \\
+Frozen baseline              & 3.28M & \todo{} & \todo{} & \todo{} & \todo{} \\
 \midrule
-\multicolumn{6}{l}{\emph{This work (dynamic, parameter-efficient adaptation)}} \\
-\quad Baseline (our run)         & \todo{}   & \todo{} & \todo{} & \todo{} & \todo{} \\
-\quad + Subword reg.\ (spm)      & \todo{}   & \todo{} & \todo{} & \todo{} & \todo{} \\
-\quad + Subword reg.\ (maxmatch) & \todo{}   & \todo{} & \todo{} & \todo{} & \todo{} \\
-\quad + Adapters (LoRA)          & \todo{}   & \todo{} & \todo{} & \todo{} & \todo{} \\
-\quad + Adapters (bottleneck)    & \todo{}   & \todo{} & \todo{} & \todo{} & \todo{} \\
-\quad + Both                     & \todo{}   & \todo{} & \todo{} & \todo{} & \todo{} \\
++ Subword reg.\ (maxmatch)   & 3.28M & \todo{} & \todo{} & \todo{} & \todo{} \\
++ Adapters (LoRA)            & \todo{} & \todo{} & \todo{} & \todo{} & \todo{} \\
++ Adapters (bottleneck)      & \todo{} & \todo{} & \todo{} & \todo{} & \todo{} \\
++ Both (maxmatch + LoRA)     & \todo{} & \todo{} & \todo{} & \todo{} & \todo{} \\
 \bottomrule
 \end{tabular}
 \caption{Constituency parsing on the PPCHY test set (\%). UF/LF = unlabeled /
-labeled F1; UCM/LCM = complete-match rates. \todo{Fill from evaluate\_peft.py
-output; add $\pm$std if you ran multiple seeds. Note in the caption that your
-baseline configuration (n\_bert\_layers, pooling) may differ from the
-reference rows -- state it explicitly.}}
+labeled F1; UCM/LCM = complete-match rates; Trainable = parameters updated, of
+$281.3$M total. Every cell shares the configuration in
+Appendix~\ref{app:hyper} and differs only in the intervention named.
+\todo{Fill from evaluate\_peft.py output, add $\pm$std if more than one seed
+completed, and state the adapter parameter counts in the Trainable column.}}
 \label{tab:main}
 \end{table*}
 
@@ -529,10 +523,11 @@ with a matched zero-shot and 3-shot condition over the same sentences. Three
 findings hold across both tiers.
 
 First, \textbf{no configuration approaches a trained parser.} The best cell is
-the frontier model with exemplars, at 54.24 labeled F1 -- roughly 30 points
-below the frozen-encoder baseline, and its \emph{unlabeled} score (73.73) still
-falls short of the baseline's \emph{labeled} score. A dedicated parser is
-therefore not made redundant by current general-purpose models.
+the frontier model with exemplars, at 54.24 labeled F1
+\todo{state the gap to your own baseline in Table~\ref{tab:main} once it exists},
+and its \emph{unlabeled} score (73.73) still falls short of our baseline's
+\emph{labeled} score. A dedicated parser is therefore not made redundant by
+current general-purpose models.
 
 Second, \textbf{exemplars help, and the effect replicates.} Labeled F1 rises
 $+8.7$ points on the frontier tier and $+13.0$ on the Lite tier. Per sentence,
@@ -560,8 +555,8 @@ wrong variant of it, rather than failing to analyse Yiddish; the 3-shot
 conditions visibly adopt this corpus's inventory instead.
 
 Even read charitably, none of this displaces a trained parser: the best cell's
-$54.24$ labeled F1 is roughly thirty points below the frozen-encoder baseline,
-and even its \emph{unlabeled} score does not reach the baseline's \emph{labeled}
+$54.24$ labeled F1 falls well short of our baseline (Table~\ref{tab:main}), and
+even its \emph{unlabeled} score does not reach the baseline's \emph{labeled}
 score.
 
 The few-shot conditions answer the question that motivated running them. Three
@@ -604,13 +599,13 @@ evaluating a paid API: the ability to re-derive every metric offline is worth mo
 than the disk it costs.
 
 \todo{Add the parser discussion once the grid finishes. Two branches:
-(1) If subword regularization and adapters land near the baseline, then three
-independent interventions -- static vocabulary injection, dynamic
-re-segmentation, and parameter-efficient adaptation -- have now all failed to
-move frozen-encoder parsing F1, which is much stronger evidence for the
-resilience of constituency structure to fragmentation than
-the single prior null result. Emphasise the cost
-asymmetry: the same F1 for 1--2M trainable parameters and no pre-training run.
+(1) If both interventions land near the baseline, argue that constituency
+structure is resilient to subword fragmentation: two independent dynamic
+interventions failed to move a frozen encoder's parsing F1, which suggests the
+encoder already extracts enough structural signal from fragmented pieces and that
+orthographic repair is not what this task lacks. Emphasise the cost side --
+whatever the outcome, it was obtained for 1--2M trainable parameters and no
+pre-training run.
 (2) If something does help, quantify it and say which failure mode it addresses;
 relate it to the fertility statistics in Table~\ref{tab:fertility}, since those
 bound how many tokens the intervention can possibly affect.}
@@ -618,9 +613,9 @@ bound how many tokens the intervention can possibly affect.}
 \section{Conclusion}
 
 We asked whether the subword-fragmentation bottleneck in Yiddish parsing yields
-to dynamic, parameter-efficient adaptation, after a prior static attempt --- clean
-vocabulary injection plus continued pre-training --- left downstream parsing
-unchanged. We evaluated stochastic subword re-segmentation and MAD-X-style
+to dynamic, parameter-efficient adaptation, rather than to the static route of
+vocabulary injection plus continued pre-training. We evaluated stochastic subword
+re-segmentation and MAD-X-style
 adapters over a fully frozen encoder, training $1.17\%$ of the model's parameters
 and requiring no pre-training at all. \todo{One or two sentences with the
 outcome, and what it implies about where the fragmentation problem does and does
@@ -629,8 +624,8 @@ not live.}
 Alongside this we tested the premise itself: whether a current general-purpose
 model already parses historical Yiddish well enough to make the exercise moot. It
 does not. The best of four frontier configurations reaches $54.2$ labeled F1,
-roughly thirty points below a trained parser, and its unlabeled score does not
-reach the parser's labeled score. The shape of that gap is informative --- output
+far short of our trained parser, and its unlabeled score does not reach the
+parser's labeled score. The shape of that gap is informative --- output
 is well-formed, and in-context examples raise token fidelity far more than parse
 quality --- which suggests that treebank-faithful syntactic analysis remains a
 task where a small, dedicated, cheaply-trained model earns its place.
@@ -735,12 +730,11 @@ adapter learning rate was swept over $\{1,3,10\}\times10^{-4}$.}
 \end{table}
 
 Note on layer mixing: SuPar 1.1.4 always applies a scalar mix over the top
-\texttt{n\_bert\_layers} encoder layers; its \texttt{bert\_pooling} argument
-controls only how subword pieces are pooled into a word vector. We mention this
-because the previous project reports setting \texttt{bert\_pooling} to
-\texttt{scalar\_mix}, which is not one of the accepted values, so the
-configuration difference between those runs and ours is the number of mixed
-layers rather than the pooling mode \citep{prior-course-project}.
+\texttt{n\_bert\_layers} encoder layers, and its \texttt{bert\_pooling} argument
+controls only how subword pieces are pooled into a word vector
+(\texttt{first}, \texttt{last}, or mean). The two are easily confused, and a
+value that is not one of the accepted three silently falls through to the mean
+branch, so we state both settings explicitly above.
 
 \section{LLM Prompts}
 \label{app:prompts}
