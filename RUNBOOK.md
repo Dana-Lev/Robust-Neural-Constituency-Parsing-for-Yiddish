@@ -315,15 +315,40 @@ debug — do not launch the grid.
 
 ## Step 6 — Launch the experiment grid
 
-Each cell writes to its own `output/parser_<cell>/`, so nothing overwrites
-anything. Launch from the `yiddish_parser/` directory:
+### Pre-check: can the job find your conda?
+
+Six jobs failing identically at activation is the most expensive way to discover
+a path problem, so confirm it with **one** job before fanning out.
+
+You do **not** need to hand-edit the job script. It locates conda itself, trying
+`$NLP_STORAGE/miniconda3`, then `$NLP_STORAGE/anaconda3`, then `~/miniconda3`,
+and exits immediately with a pointer to Step 2 if none of them exist. Since
+`sbatch` inherits your submitting environment, exporting `NLP_STORAGE` (Step 1)
+is all it needs.
 
 ```bash
 cd "$NLP_STORAGE/Robust-Neural-Constituency-Parsing-for-Yiddish/yiddish_parser"
 mkdir -p logs
 
-# arguments: mode  adapter-type  backend
+# submit ONE cell first
 sbatch src/parser_train_peft.slurm baseline
+
+# then read its log: activation happens in the first few lines
+tail -f logs/peft_<jobid>.out
+```
+
+**Check:** the log prints `Using conda from /…/miniconda3/etc/profile.d/conda.sh`,
+then the parameter-count table from `describe_trainable`, then training starts.
+If instead it prints `ERROR: no conda found under …`, either `NLP_STORAGE` did
+not reach the job (`echo $NLP_STORAGE` in the submitting shell) or Step 2 has not
+finished. Fix that before submitting anything else.
+
+### The rest of the grid
+
+Each cell writes to its own `output/parser_<cell>/`, so nothing overwrites
+anything. Arguments are `mode`, `adapter-type`, `backend`.
+
+```bash
 sbatch src/parser_train_peft.slurm bpe-dropout lora spm
 sbatch src/parser_train_peft.slurm bpe-dropout lora maxmatch
 sbatch src/parser_train_peft.slurm adapters   lora
@@ -338,8 +363,8 @@ squeue -u $USER
 tail -f logs/peft_<jobid>.out
 ```
 
-`studentkillable` jobs can be preempted. If a job dies, just resubmit the same
-line — each cell is independent.
+`studentkillable` jobs can be preempted. If a job dies, resubmit the same line —
+each cell is independent.
 
 ### Follow-up runs (Step 6b, after the first six land)
 
@@ -355,11 +380,14 @@ ADAPTER_LR=1e-3 OUTPUT_DIR=./output/parser_adapters_lora_lr1e-3 \
 SEED=2 sbatch src/parser_train_peft.slurm baseline
 SEED=3 sbatch src/parser_train_peft.slurm baseline
 
-# Optional: 12-layer scalar mix, to connect to the prior project's 83.81 setup
+# Optional: 12 encoder layers into the scalar mix, to connect to the prior
+# project's 83.81 configuration
 N_BERT_LAYERS=12 sbatch src/parser_train_peft.slurm baseline
 ```
 
-**Check:** every finished job leaves a `yiddish_parser.pt` in its output directory.
+**Check:** every finished job leaves a `yiddish_parser.pt` in its own output
+directory. Directory names include mode, adapter, backend, layer count and seed,
+so no two cells can overwrite each other.
 
 ---
 
@@ -500,8 +528,9 @@ ENCODER=./output/phase2_trained/checkpoint-6000 \
 
 | Task | Command |
 |---|---|
-| Build data | `./scripts/build_ppchy_data.sh` |
+| Build data | `bash scripts/build_ppchy_data.sh` |
 | Data statistics | `python scripts/dataset_stats.py --data-dir yiddish_parser/data/processed/supar_ready --markdown` |
+| Split composition | `python scripts/split_provenance.py --write-labels` |
 | Sampler self-test | `python src/train_parser_peft.py --selftest --backend maxmatch` |
 | Train one cell | `sbatch src/parser_train_peft.slurm <mode> <adapter> <backend>` |
 | Evaluate one cell | `python src/evaluate_peft.py --path output/parser_<cell>/yiddish_parser.pt --adapter-type <type>` |
