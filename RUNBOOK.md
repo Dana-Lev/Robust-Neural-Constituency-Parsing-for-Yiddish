@@ -327,7 +327,34 @@ DEVICE: cuda  (1 visible, NVIDIA ..., 12.0 GB)
 ```
 
 If it prints `DEVICE: cpu -- NO GPU VISIBLE` the script now stops rather than
-crawling. A frozen XLM-R over 100 short sentences takes **seconds** per epoch on
+crawling. It also launches a real kernel before training and stops if that
+fails, because `torch.cuda.is_available()` returns `True` even when the wheel
+ships **no kernels for this GPU's architecture** — recent PyTorch builds drop
+Pascal and older. On this cluster the partition includes TITAN Xp cards
+(`sm_61`), which a `cu128` wheel cannot run at all:
+
+```
+GPU IS VISIBLE BUT CANNOT RUN KERNELS
+  ... this GPU is sm_61; this torch build supports sm_75 sm_80 ...
+```
+
+Two ways out. Prefer the first if the partition has newer cards:
+
+```bash
+# 1. see what GPU types exist, then ask for one that is supported
+sinfo -p studentkillable -o "%20N %10G %30f"
+sbatch --gres=gpu:<newer-type>:1 src/parser_train_peft.slurm baseline
+
+# 2. or install a torch new enough for the CUDA 12.9 driver and old enough to
+#    still ship sm_61 kernels
+pip install --force-reinstall torch==2.5.1 --index-url https://download.pytorch.org/whl/cu121
+```
+
+Verify either fix in seconds, without queueing a training job:
+
+```bash
+srun -p studentkillable --gpus=1 --time=0:05:00 --pty python -c "import torch; x=torch.zeros(64,device='cuda'); print('kernels OK', (x@x).item(), torch.cuda.get_device_name(0))"
+``` A frozen XLM-R over 100 short sentences takes **seconds** per epoch on
 a GPU and **6-13 minutes** on CPU, which looks exactly like a hung job. Causes,
 in order of likelihood:
 

@@ -202,9 +202,44 @@ def describe_device(args) -> str:
         count = torch.cuda.device_count()
         name = torch.cuda.get_device_name(0)
         total = torch.cuda.get_device_properties(0).total_memory / 1e9
-        print(f"DEVICE: cuda  ({count} visible, {name}, {total:.1f} GB)")
+        capability = "%d.%d" % torch.cuda.get_device_capability(0)
+        arches = getattr(torch.cuda, "get_arch_list", lambda: [])()
+        print(f"DEVICE: cuda  ({count} visible, {name}, {total:.1f} GB, sm_{capability.replace('.', '')})")
+        print(f"        torch {torch.__version__} builds kernels for: "
+              f"{' '.join(arches) or 'unknown'}")
         if slurm:
             print(f"        Slurm job {slurm}")
+
+        # torch.cuda.is_available() only checks for a driver and a device. A
+        # wheel that ships no kernels for this GPU's compute capability still
+        # reports True, moves tensors to the device happily, and fails at the
+        # first real kernel launch -- deep inside training, minutes later.
+        # Launch one now so the failure is immediate and legible.
+        try:
+            probe = torch.zeros(64, device="cuda")
+            probe.add_(1.0)
+            (probe @ probe).item()
+        except Exception as exc:  # noqa: BLE001 - any failure here is fatal
+            print("-" * 66)
+            print("GPU IS VISIBLE BUT CANNOT RUN KERNELS:")
+            print(f"  {type(exc).__name__}: {str(exc).splitlines()[0]}")
+            print("")
+            print(f"  This GPU is sm_{capability.replace('.', '')}; this torch build "
+                  f"supports {' '.join(arches) or '(unknown)'}.")
+            print("  Recent PyTorch wheels drop older architectures (Pascal and")
+            print("  below). Two ways out:")
+            print("")
+            print("  1. Ask Slurm for a newer GPU, if the partition has one:")
+            print("       sinfo -p studentkillable -o '%N %G %f'")
+            print("       sbatch --gres=gpu:<newer-type>:1 ...")
+            print("  2. Install a torch old enough to include this architecture,")
+            print("     new enough for the driver (CUDA 12.x), e.g.:")
+            print("       pip install --force-reinstall torch==2.5.1 \\")
+            print("           --index-url https://download.pytorch.org/whl/cu121")
+            print("-" * 66)
+            raise SystemExit(3)
+
+        print("        kernel launch test: OK")
         print("-" * 66)
         return "cuda"
 
