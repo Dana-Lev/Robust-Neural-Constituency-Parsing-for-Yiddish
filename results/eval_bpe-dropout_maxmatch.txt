@@ -1,0 +1,8 @@
+  Labelled Precision          75.57
+  Labelled Recall             75.06
+  Labelled F1                 75.32
+  Unlabelled Precision        85.88
+  Unlabelled Recall           85.29
+  Unlabelled F1               85.58
+  Labelled Complete Match     33.29
+  Unlabelled Complete Match   45.21
