@@ -57,7 +57,7 @@ whether the bottleneck yields instead to \emph{dynamic}, parameter-efficient
 adaptation: stochastic subword re-segmentation during training, and MAD-X-style
 language adapters over a fully frozen encoder, neither of which modifies the
 vocabulary or requires pre-training. Training only
-$3.3$M of $281.3$M parameters ($1.17\%$), we compare both against a frozen-encoder
+$11.9$M of $289.9$M parameters ($4.1\%$), we compare both against a frozen-encoder
 baseline on the Penn Parsed Corpus of Historical Yiddish. \todo{One sentence with
 the headline parser result once the grid finishes.} We additionally test whether
 the problem is already solved by general-purpose models: across two model tiers
@@ -116,8 +116,8 @@ Our contributions are:
 \begin{itemize}[itemsep=2pt,topsep=2pt]
 \item Two parameter-efficient treatments of subword fragmentation for
 constituency parsing, implemented as runtime patches over SuPar
-\citep{zhang-etal-2020-fast} that leave the library and the original pipeline
-untouched, training $1.17\%$ of the model's parameters. \todo{State the outcome
+\citep{zhang-etal-2020-fast} that leave the library untouched, training $4.1\%$ of the model's
+parameters. \todo{State the outcome
 in one clause once the grid finishes.}
 \item A frontier-LLM control on the same test data and the same metric, showing a
 gap of roughly thirty labeled F1 to a trained parser --- so the parsing problem is
@@ -206,6 +206,7 @@ never the chart --- which is what makes the comparison between them clean.
 % Rubric: methodology is 20pt -- data, baselines, no leakage, seeds.
 
 \subsection{Data}
+\label{sec:data}
 We use the Penn Parsed Corpus of Historical Yiddish (PPCHY), converted from its
 romanized form into Hebrew script with the \texttt{ppchyprep} utility of
 \citet{kulick-etal-2022-part}, so that the conversion matches their published
@@ -254,8 +255,8 @@ attributable to the intervention rather than to capacity. The encoder is
 \citep{ybc-2023}, and it is \emph{entirely frozen}: all $278.0$M backbone parameters, including the
 $250002 \times 768 = 192{,}001{,}536$ input embedding matrix. Trainable
 parameters are the span and label MLPs, the biaffine attention scorers, and
-SuPar's scalar mix over encoder layers --- $3{,}283{,}078$ in total, or $1.17\%$
-of the $281.3$M-parameter model (Table~\ref{tab:params}). The training log prints
+SuPar's scalar mix over encoder layers --- $11{,}862{,}119$ in total, or
+$4.09\%$ of the $289.9$M-parameter model (Table~\ref{tab:params}). The training log prints
 this breakdown on every run, and the optimizer excludes frozen parameters
 explicitly rather than relying on gradients being zero.
 
@@ -267,18 +268,23 @@ explicitly rather than relying on gradients being zero.
 \toprule
 \textbf{Component} & \textbf{Params} & \textbf{\%} \\
 \midrule
-Parser head (MLPs, biaffine) & 2{,}693{,}249 & 82.0 \\
-Scalar mix + projection      &   589{,}829 & 18.0 \\
+Parser head                  & 11{,}272{,}290 & 3.89 \\
+\quad of which label biaffine & 10{,}098{,}990 & 3.48 \\
+Scalar mix + projection      &     589{,}829 & 0.20 \\
 \midrule
-\textbf{Trainable}           & \textbf{3{,}283{,}078} & \textbf{1.17} \\
-Frozen backbone              & 278{,}043{,}648 & 98.83 \\
-\quad of which embeddings    & 192{,}001{,}536 & \\
+\textbf{Trainable}           & \textbf{11{,}862{,}119} & \textbf{4.09} \\
+Frozen backbone              & 278{,}043{,}648 & 95.91 \\
+\quad of which embeddings    & 192{,}001{,}536 & 66.23 \\
 \midrule
-Total                        & 281{,}326{,}726 & 100.0 \\
+Total                        & 289{,}905{,}767 & 100.0 \\
 \bottomrule
 \end{tabular}
-\caption{Parameter budget, identical across all cells except for the adapter
-parameters each one adds (Section~\ref{sec:adapters}). Percentages of the total.}
+\caption{Parameter budget, identical across cells except for the adapter
+parameters each one adds (Section~\ref{sec:adapters}). Percentages of the total.
+Note that the label biaffine scorer dominates the trainable budget because it
+scales with the label inventory, and PPCHY's function-tagged labels are numerous
+(226 in our splits, Section~\ref{sec:data}); a category-only treebank would make
+this parser several times smaller.}
 \label{tab:params}
 \end{table}
 
@@ -435,9 +441,9 @@ explicitly rather than implying more.}
 \toprule
 \textbf{Model} & \textbf{Trainable} & \textbf{UF} & \textbf{LF} & \textbf{UCM} & \textbf{LCM} \\
 \midrule
-Frozen baseline              & 3.28M & \todo{} & \todo{} & \todo{} & \todo{} \\
+Frozen baseline              & 11.86M & \todo{} & \todo{} & \todo{} & \todo{} \\
 \midrule
-+ Subword reg.\ (maxmatch)   & 3.28M & \todo{} & \todo{} & \todo{} & \todo{} \\
++ Subword reg.\ (maxmatch)   & 11.86M & \todo{} & \todo{} & \todo{} & \todo{} \\
 + Adapters (LoRA)            & \todo{} & \todo{} & \todo{} & \todo{} & \todo{} \\
 + Adapters (bottleneck)      & \todo{} & \todo{} & \todo{} & \todo{} & \todo{} \\
 + Both (maxmatch + LoRA)     & \todo{} & \todo{} & \todo{} & \todo{} & \todo{} \\
@@ -616,7 +622,7 @@ We asked whether the subword-fragmentation bottleneck in Yiddish parsing yields
 to dynamic, parameter-efficient adaptation, rather than to the static route of
 vocabulary injection plus continued pre-training. We evaluated stochastic subword
 re-segmentation and MAD-X-style
-adapters over a fully frozen encoder, training $1.17\%$ of the model's parameters
+adapters over a fully frozen encoder, training $4.1\%$ of the model's parameters
 and requiring no pre-training at all. \todo{One or two sentences with the
 outcome, and what it implies about where the fragmentation problem does and does
 not live.}
