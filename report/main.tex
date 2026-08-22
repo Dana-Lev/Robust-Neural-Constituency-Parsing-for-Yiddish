@@ -62,7 +62,7 @@ baseline on the Penn Parsed Corpus of Historical Yiddish. \todo{One sentence wit
 the headline parser result once the grid finishes.} We additionally test whether
 the problem is already solved by general-purpose models: across two model tiers
 and matched zero-/few-shot conditions, the best frontier configuration reaches
-$54.2$ labeled F1, far below a trained parser, and we show that most of the
+$54.2$ labeled F1 against our parser's $74.9$, and we show that most of the
 apparent benefit of in-context examples is improved instruction-following rather
 than improved parsing.
 \end{abstract}
@@ -421,6 +421,18 @@ for the TITAN Xp's compute capability, which caused a job to report a working GP
 and then fail at its first kernel launch --- so our training entrypoint now
 launches a probe kernel and refuses to start if it fails.
 
+\paragraph{Reproducibility notes.} SuPar 1.1.4 predates the current PyTorch
+line, and three incompatibilities had to be handled rather than worked around.
+\texttt{torch.load} now defaults to \texttt{weights\_only=True} and refuses
+SuPar's checkpoints, which embed a config object and a dill-pickled transform;
+checkpoints trained on a GPU additionally carry CUDA storage tags that will not
+deserialise in a CPU-only process without an explicit \texttt{map\_location}; and
+current wheels build no kernels for the compute capability of some cards in our
+shared partition, which produces a job that reports a working GPU and then fails
+at its first kernel launch. Our entrypoints resolve all three explicitly, and
+print the device and its kernel-launch test before training, so a
+misconfiguration is visible in the first seconds of a log rather than an hour in.
+
 \paragraph{Sanity check.} Following the course guidance to demonstrate that
 training works before interpreting any negative result, we first overfit a
 $100$-sentence subset with development and test sets identical to it.
@@ -441,7 +453,7 @@ explicitly rather than implying more.}
 \toprule
 \textbf{Model} & \textbf{Trainable} & \textbf{UF} & \textbf{LF} & \textbf{UCM} & \textbf{LCM} \\
 \midrule
-Frozen baseline              & 11.86M & \todo{} & \todo{} & \todo{} & \todo{} \\
+Frozen baseline              & 11.86M & 85.24 & 74.89 & 43.93 & 31.43 \\
 \midrule
 + Subword reg.\ (maxmatch)   & 11.86M & \todo{} & \todo{} & \todo{} & \todo{} \\
 + Adapters (LoRA)            & \todo{} & \todo{} & \todo{} & \todo{} & \todo{} \\
@@ -474,7 +486,7 @@ completed, and state the adapter parameter counts in the Trainable column.}}
 \quad & zero-shot & 86.0 & 44.0 & 24.74 & 46.41 & 42.46 \\
 \quad & 3-shot    & 86.0 & 71.0 & 37.76 & 51.35 & 54.34 \\
 \midrule
-\multicolumn{2}{l}{SuPar parser (ours)} & 100.0 & 100.0 & \todo{} & \todo{} & \todo{} \\
+\multicolumn{2}{l}{SuPar parser (ours)} & 100.0 & 100.0 & \textbf{74.89} & 74.89 & 85.24 \\
 \bottomrule
 \end{tabular}
 \caption{Frontier-LLM control (\%). Valid = share of returned answers that parse
@@ -524,16 +536,33 @@ regularization signal. The longest sampled segmentation is well inside our
 figure as PDF once the grid finishes, with one paragraph of interpretation each.}
 
 \label{sec:results-llm}
+\paragraph{The frozen-encoder baseline.} Training only the parser head over a
+completely frozen encoder reaches $74.89$ labeled F1 and $85.24$ unlabeled F1 on
+the PPCHY test set, parsing $31.4\%$ of test sentences perfectly under the full
+labeled scheme and $43.9\%$ when labels are ignored. Early stopping halted
+training after $68$ epochs, at which point training loss had fallen below $0.01$
+while development F1 had been flat for ten epochs --- the model had extracted what
+it could from the data it was given. Two things are worth noting for the
+comparisons that follow. The $10.4$-point gap between unlabeled and labeled F1 is
+the cost of PPCHY's function-tagged inventory: the brackets are largely right and
+the labels are the harder problem, which is the same asymmetry the LLM control
+exhibits far more severely. And this number is obtained with a frozen backbone, so
+it is a floor for what the encoder already knows rather than a ceiling on the
+architecture.
+\todo{Add the remaining rows of Table~\ref{tab:main} and one paragraph comparing
+them to this baseline once the grid finishes.}
+
 \paragraph{The LLM control.} Table~\ref{tab:llm} reports two model tiers, each
 with a matched zero-shot and 3-shot condition over the same sentences. Three
 findings hold across both tiers.
 
 First, \textbf{no configuration approaches a trained parser.} The best cell is
-the frontier model with exemplars, at 54.24 labeled F1
-\todo{state the gap to your own baseline in Table~\ref{tab:main} once it exists},
-and its \emph{unlabeled} score (73.73) still falls short of our baseline's
-\emph{labeled} score. A dedicated parser is therefore not made redundant by
-current general-purpose models.
+the frontier model with exemplars, at $54.24$ labeled F1 --- $20.7$ points below
+our frozen-encoder baseline, or $72\%$ of its score. Its \emph{unlabeled} F1
+($73.73$) does not even reach the baseline's \emph{labeled} F1 ($74.89$): the
+parser assigns full function-tagged labels more accurately than the language
+model draws unlabeled brackets. A dedicated parser is therefore not made
+redundant by current general-purpose models, and the margin is not marginal.
 
 Second, \textbf{exemplars help, and the effect replicates.} Labeled F1 rises
 $+8.7$ points on the frontier tier and $+13.0$ on the Lite tier. Per sentence,
@@ -561,9 +590,9 @@ wrong variant of it, rather than failing to analyse Yiddish; the 3-shot
 conditions visibly adopt this corpus's inventory instead.
 
 Even read charitably, none of this displaces a trained parser: the best cell's
-$54.24$ labeled F1 falls well short of our baseline (Table~\ref{tab:main}), and
-even its \emph{unlabeled} score does not reach the baseline's \emph{labeled}
-score.
+$54.24$ labeled F1 is $20.7$ points below our baseline
+(Table~\ref{tab:main}), and even its \emph{unlabeled} score does not reach the
+baseline's \emph{labeled} score.
 
 The few-shot conditions answer the question that motivated running them. Three
 examples do move labeled F1 substantially, so a meaningful part of the zero-shot
@@ -629,9 +658,9 @@ not live.}
 
 Alongside this we tested the premise itself: whether a current general-purpose
 model already parses historical Yiddish well enough to make the exercise moot. It
-does not. The best of four frontier configurations reaches $54.2$ labeled F1,
-far short of our trained parser, and its unlabeled score does not reach the
-parser's labeled score. The shape of that gap is informative --- output
+does not. The best of four frontier configurations reaches $54.2$ labeled F1
+against our parser's $74.9$, and its unlabeled score does not reach the parser's
+labeled score. The shape of that gap is informative --- output
 is well-formed, and in-context examples raise token fidelity far more than parse
 quality --- which suggests that treebank-faithful syntactic analysis remains a
 task where a small, dedicated, cheaply-trained model earns its place.
