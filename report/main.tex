@@ -435,8 +435,12 @@ misconfiguration is visible in the first seconds of a log rather than an hour in
 
 \paragraph{Sanity check.} Following the course guidance to demonstrate that
 training works before interpreting any negative result, we first overfit a
-$100$-sentence subset with development and test sets identical to it.
-\todo{Report the final F1 reached on that subset in one sentence.}
+$100$-sentence subset with development and test sets identical to it. The parser
+reaches $97.99$ labeled F1 and $98.73$ unlabeled F1 there, parsing $84\%$ of
+those sentences perfectly under the full labeled scheme. The pipeline can
+therefore fit this data to near-ceiling when the task is memorisation, which is
+what licenses reading any subsequent flat result as a property of the
+intervention rather than a defect in the setup.
 
 \paragraph{Randomness.} \todo{State the number of seeds actually run and report
 mean$\pm$std for the cells you report; if only one seed completed, say so
