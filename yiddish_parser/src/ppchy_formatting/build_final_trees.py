@@ -53,6 +53,7 @@ def main():
 
     all_trees = []
     used_files = []
+    provenance = []   # (source_file, tree) pairs, so results can be broken down later
 
     for filename in sorted(os.listdir(json_dir)):
         if args.only and not any(key.lower() in filename.lower() for key in args.only):
@@ -65,12 +66,22 @@ def main():
                     final_tree = clean_and_replace(entry['tree'], entry['leaves'])
                     if final_tree:
                         all_trees.append(final_tree)
+                        provenance.append((filename, final_tree))
     
     with open(output_path, 'w') as f:
         for tree in all_trees:
             f.write(tree + "\n")
     
+    # Sidecar manifest: the split step shuffles the flat file and loses track of
+    # which PPCHY component each tree came from. Keeping a source->tree map means
+    # per-component F1 can be recovered afterwards without retraining anything.
+    manifest_path = os.path.splitext(output_path)[0] + ".sources.tsv"
+    with open(manifest_path, 'w', encoding='utf-8') as fout:
+        for source, tree in provenance:
+            fout.write(f"{source}\t{tree}\n")
+
     print(f"Created {len(all_trees)} Hebrew-script trees in {output_path}")
+    print(f"Wrote provenance manifest to {manifest_path}")
     print(f"Source files used ({len(used_files)}): {', '.join(used_files)}")
 
 if __name__ == "__main__":

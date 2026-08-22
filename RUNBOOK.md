@@ -211,19 +211,47 @@ cd "$NLP_STORAGE/Robust-Neural-Constituency-Parsing-for-Yiddish"
 That runs four steps: JSON → Hebrew-script trees → `(TOP …)` normalization →
 90/5/5 split (seed 42) → removal of trees SuPar would reject.
 
-### One decision to make consciously
+### Corpus selection: use the whole corpus
 
-By default this ingests **every** PPCHY component. The prior project's report
-claims to follow Kulick et al. (2022) and use only the two largest 20th-century
-texts — but its code processed everything. Pick one and make the report match:
+The default ingests **every** PPCHY component, and that is the right choice here:
+
+- The intervention targets fragmentation caused by orthographic variation, and
+  the older non-SYO components are where spelling is messiest. Dropping them
+  removes the phenomenon under test and biases towards an uninterpretable null.
+- The prior project's 83.81 LF came from code that ingested everything (its
+  ~17k sentences cannot come from an 83k-token subset), so matching its *code*
+  is what makes the reference rows comparable. Its paper's claim to follow
+  Kulick et al. (2022) is the part that does not match its implementation.
+- Differences of ±1 LF need the larger test set to be visible at all.
+
+The report must then describe the data as *all PPCHY components*, and note the
+discrepancy with the prior write-up.
 
 ```bash
-# whole corpus (default)
+# whole corpus -- what to use
 ./scripts/build_ppchy_data.sh
 
-# or the Kulick et al. subset
+# the Kulick et al. subset, for reference only
 ONLY="hirshbein olsvanger" ./scripts/build_ppchy_data.sh
 ```
+
+### Record which components landed in each split
+
+`build_final_trees.py` writes a `*.sources.tsv` manifest, because the split step
+shuffles a flat file and otherwise loses track of provenance. Recover it:
+
+```bash
+python scripts/split_provenance.py \
+    --manifest yiddish_parser/data/processed/ppchy_final_trees.sources.tsv \
+    --data-dir yiddish_parser/data/processed/supar_ready \
+    --write-labels | tee results/split_composition.txt
+```
+
+This gives two things: the composition of each split for the report's data
+section, and `test.sources.txt` aligned line-for-line with `test.txt`. With that
+label file, test F1 can be broken down per component **without retraining** —
+which is how you answer "does subword regularization help more where the
+orthography is noisier?", the sharpest version of this project's question.
 
 ### Record the statistics — the report needs them
 

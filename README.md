@@ -51,6 +51,7 @@ this zero-shot?** `testing.py` measures that directly.
 | `RUNBOOK.md` | Step-by-step build, train, evaluate and publish procedure for the Slurm cluster |
 | `scripts/build_ppchy_data.sh` | One command from ppchyprep JSON to SuPar-ready splits |
 | `scripts/dataset_stats.py` | Sentence/token counts, label distribution and subword fertility per split |
+| `scripts/split_provenance.py` | Which PPCHY component each split tree came from, for per-component result breakdowns |
 | `results/` | Committed evidence trail: statistics, sanity checks, evaluation output |
 
 Inherited pipeline scripts — `train_parser.py`, `inject_vocab.py`, `run_mlm.py`,
