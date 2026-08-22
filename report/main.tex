@@ -653,32 +653,6 @@ of historical Yiddish.
 % =====================================================================
 \section{Discussion}
 
-\paragraph{What the LLM control settles.} The deficit is large and, more usefully,
-structured. Output is essentially always well-formed; the labeled/unlabeled gap
-persists across every condition; and the apparent benefit of in-context examples
-halves once token fidelity is controlled for. Taken together these say that the
-models can read historical Yiddish and produce plausible constituent structure,
-but cannot reliably deliver \emph{annotation-faithful} analyses of it. That is
-precisely the capability a treebank-trained parser supplies, and it is why the
-existence of strong general-purpose models does not retire this task.
-
-\paragraph{A methodological point.} Token fidelity deserves to be reported
-routinely in LLM parsing evaluations. In our Lite zero-shot condition, $56$ of
-$100$ answers failed to reproduce the supplied tokens, and those answers score
-near zero by construction --- a tree over different terminals cannot align to the
-gold spans at all. An evaluation reporting only F1 would have attributed that to
-parsing inability. The distinction is not cosmetic: it changes the headline number
-by more than twenty points and it points at a different fix (prompt and decoding
-constraints, rather than model capability).
-
-\paragraph{On our own measurement.} We twice found that a plausible-looking
-number was an artifact rather than a result: an API rate-limit failure counted as
-a model error, and a label inventory counted with co-indexation attached. Both
-were caught because the pipeline stores per-sentence records and can recompute
-summaries without re-querying. We would recommend that design to anyone
-evaluating a paid API: the ability to re-derive every metric offline is worth more
-than the disk it costs.
-
 \paragraph{The fragmentation framing was the wrong diagnosis.} The premise we
 inherited was that Yiddish parsing is held back by subword fragmentation, and the
 established response is to repair the vocabulary. Our two interventions separate
@@ -706,13 +680,6 @@ normally paired with continued pre-training, which \emph{does} update encoder
 weights --- and that, on our evidence, is the part that would matter. A cheaper
 test of the same hypothesis is simply to let a small adapter learn.
 
-\paragraph{A caveat we cannot remove.} Every cell here is a single seed. The
-$+7$ point gap is far too large to be seed noise at this corpus size, and the
-independent agreement of two adapter families is reassuring, but the $+0.43$
-subword-regularization result is well within the range where a seed sweep could
-change its sign. We report it as ``no meaningful effect'', not as a precise
-estimate of zero.
-
 \paragraph{What the LLM control settles.} The deficit is large and, more usefully,
 structured. Output is essentially always well-formed; the labeled/unlabeled gap
 persists across every condition; and the apparent benefit of in-context examples
@@ -739,18 +706,13 @@ summaries without re-querying. We would recommend that design to anyone
 evaluating a paid API: the ability to re-derive every metric offline is worth more
 than the disk it costs.
 
-\todo{Add the parser discussion once the grid finishes. Two branches:
-(1) If both interventions land near the baseline, argue that constituency
-structure is resilient to subword fragmentation: two independent dynamic
-interventions failed to move a frozen encoder's parsing F1, which suggests the
-encoder already extracts enough structural signal from fragmented pieces and that
-orthographic repair is not what this task lacks. Emphasise the cost side --
-whatever the outcome, the adapter cells obtained it for well under a million
-adapter parameters -- 0.59M for LoRA, 0.89M for the bottleneck -- and no
-pre-training run.
-(2) If something does help, quantify it and say which failure mode it addresses;
-relate it to the fertility statistics in Table~\ref{tab:fertility}, since those
-bound how many tokens the intervention can possibly affect.}
+\paragraph{A caveat we cannot remove.} Every cell here is a single seed. The
+$+7$ point gap is far too large to be seed noise at this corpus size, and the
+independent agreement of two adapter families is reassuring, but the $+0.43$
+subword-regularization result is well within the range where a seed sweep could
+change its sign. We report it as ``no meaningful effect'', not as a precise
+estimate of zero.
+
 
 \section{Conclusion}
 
