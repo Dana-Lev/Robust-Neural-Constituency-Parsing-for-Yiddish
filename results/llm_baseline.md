@@ -29,6 +29,22 @@ sibling corpus, where this PPCHY release writes `NP-ACC` and `NP-DTV`.
 frozen-encoder baseline, and the model's *unlabeled* score still does not reach
 the baseline's *labeled* score.
 
+## Why coverage was 73.3%
+
+The failure pattern identifies the cause. All 21 of the first 21 requests
+succeeded at 13s spacing (~4.6/min), then the run hit a wall at request 22 and
+never recovered — one success at 23, then eight consecutive failures. Scattered
+failures would indicate a per-minute limit; a clean run followed by a hard
+ceiling that 160s of retrying per request cannot breach is a **per-day** cap.
+
+Raising `--sleep` therefore does not help: the constraint is requests per day,
+not per minute. Worse, the retry loop made it arrive sooner — 8 failures × 8
+attempts spent 64 extra requests, so a 30-sentence run cost **86 requests**.
+
+Fixed in `testing.py`: per-day quota errors are now distinguished from
+per-minute ones and abort the run immediately rather than retrying, and
+`--resume` re-queries only the gaps (8 requests, not 30).
+
 ## Caveats
 
 - Coverage is 73.3%, so the interval is wide. A re-run with a larger `--sleep`

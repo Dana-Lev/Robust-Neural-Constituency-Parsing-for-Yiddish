@@ -260,10 +260,33 @@ def make_client():
     return genai.Client(api_key=api_key)
 
 
+class DailyQuotaExhausted(Exception):
+    """The per-day request cap is gone. Retrying cannot help today."""
+
+
+# Substrings that identify a *per-day* quota, as opposed to a per-minute one.
+_PER_DAY_MARKERS = ("perday", "per day", "requestsperdayper", "daily limit",
+                    "quota_metric.*day")
+
+
+def is_per_day_quota(message):
+    flat = message.lower().replace("_", "").replace("-", "")
+    return any(marker.replace("_", "").replace("-", "") in flat
+               for marker in _PER_DAY_MARKERS)
+
+
 def predict_tree(client, model, prompt, max_attempts=8, backoff=20):
-    """Call the API with retry on rate limits. Returns (text, error)."""
+    """
+    Call the API, retrying only on limits that retrying can actually clear.
+
+    A per-minute limit is worth waiting out. A per-day limit is not: each retry
+    spends another request against the same exhausted cap, so eight retries per
+    sentence burn 8x the quota and still fail. Distinguishing the two is what
+    keeps a 30-sentence run from costing 86 requests.
+    """
     from google.genai import types
 
+    last = ""
     for attempt in range(1, max_attempts + 1):
         try:
             response = client.models.generate_content(
@@ -272,15 +295,20 @@ def predict_tree(client, model, prompt, max_attempts=8, backoff=20):
                 config=types.GenerateContentConfig(temperature=0.0),
             )
             return (response.text or "").strip(), None
-        except Exception as exc:  # noqa: BLE001 - we inspect and re-raise below
-            message = str(exc)
-            if "429" in message or "RESOURCE_EXHAUSTED" in message:
-                print(f"  rate limit hit (attempt {attempt}/{max_attempts}); "
+        except Exception as exc:  # noqa: BLE001 - inspected, then re-raised or reported
+            last = str(exc)
+            if "429" in last or "RESOURCE_EXHAUSTED" in last:
+                if is_per_day_quota(last):
+                    raise DailyQuotaExhausted(last)
+                print(f"  per-minute limit hit (attempt {attempt}/{max_attempts}); "
                       f"sleeping {backoff}s ...")
                 time.sleep(backoff)
                 continue
-            return None, message
-    return None, f"gave up after {max_attempts} rate-limit retries"
+            return None, last
+    # Exhausted retries on a 429 that never named its scope: most likely a daily
+    # cap, so stop rather than spending the same quota on every later sentence.
+    raise DailyQuotaExhausted(
+        f"{max_attempts} consecutive rate-limit failures; last message: {last}")
 
 
 # ---------------------------------------------------------------------------
@@ -362,6 +390,10 @@ def main():
     ap.add_argument("--sleep", type=float, default=13.0,
                     help="Seconds between requests (13s stays under the 5 req/min free tier).")
     ap.add_argument("--out", default="llm_baseline_results.json", help="Where to write results.")
+    ap.add_argument("--resume", metavar="RESULTS_JSON", default=None,
+                    help="Re-query ONLY the sentences that failed in a previous "
+                         "run, keeping its successful answers. With a daily cap, "
+                         "topping up 8 gaps costs 8 requests instead of 30.")
     ap.add_argument("--recompute", metavar="RESULTS_JSON", default=None,
                     help="Rebuild the summary from a saved results file, without "
                          "calling the API. Use after a metric fix, or to re-read an "
@@ -413,6 +445,8 @@ def main():
         items = pilot_items()[: args.n]
         source = "synthetic pilot set"
 
+    all_items = list(items)
+
     exemplars = []
     if args.shots > 0:
         if args.train_file:
@@ -422,14 +456,53 @@ def main():
             sys.exit("--shots requires --train-file (exemplars must come from the "
                      "training split, never from the evaluated data).")
 
+    # --resume: keep what already worked, re-query only what did not.
+    # The sample is seeded, so the same --n/--seed/--data reproduces the same
+    # 30 sentences and records match up by id.
+    previous = {}
+    if args.resume:
+        with open(args.resume, encoding="utf-8") as handle:
+            prior = json.load(handle)
+        for record in prior["results"]:
+            if not record.get("error"):
+                previous[record["id"]] = record
+        pending = [i for i in items if i["id"] not in previous]
+        print(f"Resuming from {args.resume}: {len(previous)} answers kept, "
+              f"{len(pending)} to re-query.")
+        if not pending:
+            print("Nothing left to query. Recomputing the summary instead.")
+            summary = summarize(list(previous.values()), model=args.model,
+                                shots=args.shots, source=source, seed=args.seed)
+            print_summary(summary)
+            return
+        items = pending
+
     client = make_client()
     print(f"Model: {args.model} | shots: {args.shots} | data: {source} | n: {len(items)}\n")
 
     results = []
 
+    aborted = None
     for index, item in enumerate(items, 1):
+        if aborted:
+            results.append({"id": item["id"], "sentence": item["sentence"],
+                            "gold_tree": item["gold_tree"], "predicted_tree": None,
+                            "valid_syntax": False, "tokens_match": False,
+                            "labeled_f1": 0.0, "unlabeled_f1": 0.0,
+                            "error": "not attempted: daily quota exhausted",
+                            "counts": None})
+            continue
+
         prompt = build_prompt(item, exemplars)
-        raw, error = predict_tree(client, args.model, prompt)
+        try:
+            raw, error = predict_tree(client, args.model, prompt)
+        except DailyQuotaExhausted as exc:
+            aborted = str(exc)
+            print(f"\n  DAILY QUOTA EXHAUSTED at request {index}/{len(items)}.")
+            print("  Stopping instead of spending the remaining quota on retries.")
+            print("  The quota resets on the provider's daily schedule; afterwards")
+            print(f"  fill only the gaps with:  --resume {args.out}\n")
+            raw, error = None, f"daily quota exhausted: {exc}"
 
         record = {"id": item["id"], "sentence": item["sentence"],
                   "gold_tree": item["gold_tree"], "predicted_tree": raw,
@@ -466,6 +539,12 @@ def main():
         print("-" * 70)
         if index < len(items):
             time.sleep(args.sleep)
+
+    if previous:
+        # order by the original sample so the file stays comparable run to run
+        merged = {r["id"]: r for r in results}
+        merged.update({k: v for k, v in previous.items()})
+        results = [merged[i["id"]] for i in all_items if i["id"] in merged]
 
     summary = summarize(results, model=args.model, shots=args.shots,
                         source=source, seed=args.seed)
