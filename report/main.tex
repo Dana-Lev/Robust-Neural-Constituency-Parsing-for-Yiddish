@@ -60,9 +60,10 @@ vocabulary or requires pre-training. Training only
 $11.9$M of $289.9$M parameters ($4.1\%$), we compare both against a frozen-encoder
 baseline on the Penn Parsed Corpus of Historical Yiddish. The two diverge
 sharply: resampling segmentation moves labeled F1 by $+0.43$ points, while
-adapters move it by $+7.1$, and two architecturally unrelated adapter families
-land within $0.07$ F1 of each other for under $0.9$M trainable parameters and no
-pre-training. The bottleneck is therefore not how Yiddish words are split but that
+adapters move it by $+7.1$, two architecturally unrelated adapter families land
+within $0.07$ F1 of each other for under $0.9$M trainable parameters and no
+pre-training, and combining both interventions is slightly worse than adapters
+alone. The bottleneck is therefore not how Yiddish words are split but that
 the encoder is not permitted to adapt. We additionally test whether
 the problem is already solved by general-purpose models: across two model tiers
 and matched zero-/few-shot conditions, the best frontier configuration reaches
@@ -487,7 +488,8 @@ Frozen baseline              & 11.86M & 85.24 & 74.89 & 43.93 & 31.43 \\
 + Adapters (bottleneck)      & 12.76M & 89.43 & \textbf{82.09} & 56.66 & 45.09 \\
 \quad \emph{vs.\ baseline}   &        & \emph{+4.19} & \emph{+7.20} & \emph{+12.73} & \emph{+13.66} \\
 \midrule
-+ Both (maxmatch + LoRA)     & 12.45M & \todo{} & \todo{} & \todo{} & \todo{} \\
++ Both (maxmatch + LoRA)     & 12.45M & 89.23 & 81.24 & 55.84 & 42.99 \\
+\quad \emph{vs.\ LoRA alone}  &        & \emph{-0.52} & \emph{-0.78} & \emph{-2.69} & \emph{-3.74} \\
 \bottomrule
 \end{tabular}
 \caption{Constituency parsing on the PPCHY test set (\%). UF/LF = unlabeled /
@@ -495,8 +497,7 @@ labeled F1; UCM/LCM = complete-match rates; Trainable = parameters updated, of
 $281.3$M total. Every cell shares the configuration in
 Appendix~\ref{app:hyper} and differs only in the intervention named.
 Adapters add $589{,}824$ (LoRA) or $894{,}528$ (bottleneck) parameters
-to the head's $11.86$M. \todo{Add the combined cell when it finishes, and
-$\pm$std if a second seed completes.}}
+to the head's $11.86$M. Every cell is a single seed.}
 \label{tab:main}
 \end{table*}
 
@@ -606,6 +607,16 @@ adapters are zero-initialised, so at step $0$ that model \emph{is} the baseline;
 every point of the gain was learned by $894{,}528$ parameters that started as an
 identity function.
 
+\paragraph{Combining them is slightly worse than adapters alone.} The cell with
+both interventions active reaches $81.24$ labeled F1 --- still $+6.35$ over the
+baseline, but $0.78$ points \emph{below} LoRA on its own, and $3.74$ points below
+it on labeled complete match. Both interventions were verified active in that run.
+So segmentation resampling is not merely unhelpful here; once the encoder can
+adapt, the noise it injects costs a little. Under the reading we develop below,
+that is what one would expect: the adapters are learning to use the encoder's
+representations of the canonical segmentation, and perturbing that segmentation
+makes their target less stable.
+
 \paragraph{The LLM control.} Table~\ref{tab:llm} reports two model tiers, each
 with a matched zero-shot and 3-shot condition over the same sentences. Three
 findings hold across both tiers.
@@ -670,6 +681,12 @@ the vocabulary --- yields $+0.43$ labeled F1. Giving the frozen encoder a small
 amount of trainable capacity, while leaving segmentation exactly as it was, yields
 $+7.13$. The encoder was not being held back by how words are split; it was being
 held back by not being allowed to adapt at all.
+
+The combined cell corroborates this. Running both interventions together scores
+$0.78$ F1 below adapters alone, so segmentation noise is not a free addition once
+the encoder has capacity to adapt --- it is a mild cost. An intervention that
+helped for the reason its motivation claims should compose with, not detract from,
+one that addresses a different bottleneck.
 
 That reading also explains why the two adapter families agree to within $0.07$
 F1 despite having little in common architecturally. If the gain came from some
@@ -755,7 +772,7 @@ in particular has a wide confidence interval and the sign test over 19 paired
 sentences only reaches $p=0.07$. The Lite tier, where 100 sentences were
 affordable, is where the few-shot effect is statistically clear. LLM results also depend on the prompt and on a model version that
 providers change without notice; we report the exact model identifier and date
-for that reason. \todo{Note the combined cell here if it does not finish in time.}
+for that reason. 
 
 % Required by the course guidelines (transparency, not graded).
 \section*{AI Disclosure and Reflection}
