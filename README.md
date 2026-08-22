@@ -52,6 +52,7 @@ this zero-shot?** `testing.py` measures that directly.
 | `scripts/build_ppchy_data.sh` | One command from ppchyprep JSON to SuPar-ready splits |
 | `scripts/dataset_stats.py` | Sentence/token counts, label distribution and subword fertility per split |
 | `scripts/split_provenance.py` | Which PPCHY component each split tree came from, for per-component result breakdowns |
+| `scripts/run_llm_baselines.sh` | The four LLM baseline runs, budgeted around the per-day quota; resumes rather than repeating |
 | `scripts/llm_results_table.py` | Every LLM run collected into one comparison table, with LaTeX rows for the report |
 | `results/` | Committed evidence trail: statistics, sanity checks, evaluation output |
 
@@ -121,12 +122,16 @@ random encoder. `load_adapted_parser` diffs the key sets and raises instead.
 ```bash
 export GEMINI_API_KEY="your-key"          # never commit a key
 
-# Zero-shot on real PPCHY test trees
-python testing.py --data yiddish_parser/data/processed/supar_ready/test.txt --n 30
-
-# Few-shot, with exemplars drawn from the training split only
-python testing.py --data .../test.txt --n 30 --shots 3 --train-file .../train.txt
+# all four conditions, budgeted around the per-day API quota
+bash scripts/run_llm_baselines.sh day1    # both Lite conditions + frontier zero-shot
+bash scripts/run_llm_baselines.sh day2    # frontier few-shot, on fresh quota
+bash scripts/run_llm_baselines.sh table   # one comparison table + LaTeX rows
 ```
+
+Free-tier limits are per day *and per model*, so the design uses two: a Flash
+tier (20/day) for the headline frontier number and a Flash Lite tier (500/day)
+for the large samples. [RUNBOOK.md](RUNBOOK.md) Step 8 has the details, including
+what to do about a `503` wave.
 
 Scoring follows the same conventions as the SuPar evaluation config (preterminals
 excluded, `TOP`/punctuation deleted, co-indexation stripped, `ADVP`≡`PRT`), so the

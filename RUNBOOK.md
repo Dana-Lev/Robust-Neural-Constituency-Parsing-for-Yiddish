@@ -426,110 +426,114 @@ configuration is wrong. A crash here is the script protecting you.
 
 ## Step 8 — Frontier-LLM baseline (run locally, not on the cluster)
 
-The cluster has no outbound API access, and this needs none of its GPUs. Copy the
-splits down to your Mac:
+The cluster has no outbound API access and this needs no GPU. Copy the splits
+down to your own machine first:
 
 ```bash
-cd ~/Desktop/Robust-Neural-Constituency-Parsing-for-Yiddish
+cd ~/Robust-Neural-Constituency-Parsing-for-Yiddish
 mkdir -p yiddish_parser/data/processed/supar_ready
 scp '<user>@slurm-client.cs.tau.ac.il:/home/morg/NLP_2526b/<user>/Robust-Neural-Constituency-Parsing-for-Yiddish/yiddish_parser/data/processed/supar_ready/*.txt' \
     yiddish_parser/data/processed/supar_ready/
 
-export GEMINI_API_KEY="your-key"
-
-python testing.py --data yiddish_parser/data/processed/supar_ready/test.txt \
-    --n 30 --out results/llm_zeroshot.json
-
-python testing.py --data yiddish_parser/data/processed/supar_ready/test.txt \
-    --n 30 --shots 3 --train-file yiddish_parser/data/processed/supar_ready/train.txt \
-    --out results/llm_fewshot.json
+export GEMINI_API_KEY="your-key"          # never commit it
 ```
 
-Both runs use the same `--seed`, so they score the same sentences — that is what
-makes zero-shot and few-shot comparable. Note the model ID and the date in the
-report; API models change under you.
+### The plan: four runs over two days
 
-### Budget the run against the daily cap
+Free-tier limits are **per day and per model**. That shapes the whole design:
 
-Free-tier limits are **per day**, not only per minute, and that decides the
-design. Check yours in the API dashboard first:
-
-| Tier | RPM | RPD | Use it for |
+| Tier | RPM | RPD | Job |
 |---|---:|---:|---|
-| Flash (3.x) | 5 | **20** | the headline "frontier model" number, ~20 sentences/day |
-| Flash Lite (3.x) | 15 | **500** | large samples: 100 sentences × both conditions in a day |
+| Flash (`gemini-3.5-flash`) | 5 | **20** | the headline "frontier model" number — one condition per day |
+| Flash Lite (`gemini-3.5-flash-lite`) | 15 | **500** | the large samples — both conditions in one day |
 
-Run two models, for two different jobs:
+Two models because the question is whether a *frontier* model can do this, and a
+Lite tier is the cheapest one available; reporting Lite alone invites the
+objection that the strongest model was never tested. The Lite runs buy the
+statistical power (n=100, full coverage) and the per-component breakdown.
 
 ```bash
-# exact ids for your key -- cheaper than guessing and spending a failed request
-python testing.py --list-models
+bash scripts/run_llm_baselines.sh day1     # Lite zero-shot + Lite few-shot + frontier zero-shot
+bash scripts/run_llm_baselines.sh day2     # frontier few-shot (next day, fresh quota)
+bash scripts/run_llm_baselines.sh table    # assemble everything
+```
 
-# frontier model, 20 sentences: fits the daily cap exactly, 100% coverage
-python testing.py --model gemini-3.7-flash --n 20 --sleep 13 \
-    --data yiddish_parser/data/processed/supar_ready/test.txt \
-    --out results/llm_frontier_zeroshot.json
-# ... then the few-shot condition the next day
+Roughly 9 + 9 + 5 minutes on day 1, 5 on day 2. The script re-runs safely: if a
+result file already exists it resumes, so only missing sentences are queried and
+nothing is paid for twice.
 
-# large sample on a Lite tier: 100 per condition, 200 requests total
-python testing.py --model gemini-3.5-flash-lite --n 100 --sleep 5 \
+The equivalent explicit commands, if you would rather run them one at a time:
+
+```bash
+python3 testing.py --model gemini-3.5-flash-lite --n 100 --sleep 5 \
     --data yiddish_parser/data/processed/supar_ready/test.txt \
     --out results/llm_lite_zeroshot.json
-python testing.py --model gemini-3.5-flash-lite --n 100 --shots 3 --sleep 5 \
+
+python3 testing.py --model gemini-3.5-flash-lite --n 100 --shots 3 --sleep 5 \
     --data yiddish_parser/data/processed/supar_ready/test.txt \
     --train-file yiddish_parser/data/processed/supar_ready/train.txt \
     --out results/llm_lite_fewshot.json
+
+python3 testing.py --model gemini-3.5-flash --n 20 --sleep 13 \
+    --data yiddish_parser/data/processed/supar_ready/test.txt \
+    --out results/llm_frontier_zeroshot.json
+
+# next day
+python3 testing.py --model gemini-3.5-flash --n 20 --shots 3 --sleep 13 \
+    --data yiddish_parser/data/processed/supar_ready/test.txt \
+    --train-file yiddish_parser/data/processed/supar_ready/train.txt \
+    --out results/llm_frontier_fewshot.json
 ```
 
-Report the frontier model as the primary result: the question is whether a
-*frontier* LLM can do this, and a Lite tier is the cheapest model available, so a
-Lite-only answer invites the objection that the strongest model was never tested.
-Use the Lite runs for tight estimates and the per-component breakdown, and say
-plainly which number came from which model.
+Few-shot exemplars come from the **training** split only, and both conditions of
+a model share `--seed`, so they score the same sentences. That is what makes
+zero-shot and few-shot comparable.
 
-**One condition per file.** Never mix models in a single `--out` — averaged
-across models the scores mean nothing. `--resume` warns if you try.
+**One condition per file, one model per file.** Scores averaged across models
+mean nothing; `--resume` warns if you try. Whichever Flash tier you use for
+zero-shot, use the same one for few-shot.
 
-### When a run misbehaves
+### If a run misbehaves
 
-Three failures look similar and need opposite responses; the script now
-distinguishes them from the error text:
+Four failures look alike and need opposite responses. The script tells them
+apart from the error text:
 
-| Symptom | Meaning | What happens |
+| Symptom | Meaning | What it does |
 |---|---|---|
-| `429` naming a *per-minute* quota | you are going too fast | waits `--sleep`-scale intervals and retries |
-| `429` naming a *per-day* quota | today's budget is gone | aborts at once, so retries do not burn the rest; resume tomorrow |
-| `503 UNAVAILABLE`, `500`, "high demand" | the provider is busy, nothing to do with you | retries with exponential backoff up to ~12 min per sentence |
-| `400`/`404` (bad key, unknown model id) | will fail identically forever | fails fast, no retries |
+| `429` naming a *per-minute* quota | going too fast | waits, retries |
+| `429` naming a *per-day* quota | today's budget is gone | aborts at once, so retries cannot burn the rest; resume tomorrow |
+| `503 UNAVAILABLE`, `500`, "high demand" | provider is overloaded, unrelated to you | exponential backoff, ~12 min of patience per sentence |
+| `400`/`404` (bad key, unknown model id) | will fail identically forever | fails fast |
 
-A `503` wave means the model is overloaded, not that you are out of quota. Wait
-and rerun, or switch to another Flash tier — each model has its own daily budget,
-so `gemini-3.5-flash` is untouched by work done on `gemini-3.7-flash`.
-
-Runs also save on interrupt: Ctrl-C writes everything gathered so far, and
-`--resume <file>` continues from there. A long run is never lost.
-
-If a run stops early on the daily cap, top up the gaps the next day instead of
-repeating it:
+A 503 wave means that model is busy, not that you are out of quota. Wait, or
+switch tiers — each model has its own daily budget, so `gemini-3.5-flash` is
+untouched by anything spent on `gemini-3.7-flash`:
 
 ```bash
-python testing.py --resume results/llm_lite_zeroshot.json \
-    --model gemini-3.5-flash-lite --n 100 \
-    --data yiddish_parser/data/processed/supar_ready/test.txt
+FRONTIER=gemini-3.7-flash bash scripts/run_llm_baselines.sh day1
 ```
 
-### Collect every run into one table
+Confirm the exact ids your key accepts (free, no quota spent):
 
 ```bash
-python scripts/llm_results_table.py "results/llm_*.json" --latex \
-    | tee results/llm_comparison.md
+python3 testing.py --list-models
 ```
 
-That prints the Markdown table plus the LaTeX rows for Table 2, so no number is
-retyped between the results and the report.
+Runs also survive interruption: Ctrl-C saves everything gathered so far, and
+re-running resumes from it.
 
-**Check:** `valid_syntax_rate` and `labeled_f1` appear in the final report block,
-and the JSON files land in `results/`.
+**Check:** each result file reports `coverage_rate` 100.0. If it is lower, the
+run lost sentences to quota — re-run the same command to top up the gaps, and if
+coverage stays below 100 say so explicitly in the report.
+
+### Assemble the table
+
+```bash
+bash scripts/run_llm_baselines.sh table
+```
+
+This writes `results/llm_comparison.md` with a Markdown table and the LaTeX rows
+for Table 2 of the report, so no number is retyped between results and paper.
 
 ---
 
@@ -613,5 +617,5 @@ ENCODER=./output/phase2_trained/checkpoint-6000 \
 | Sampler self-test | `python src/train_parser_peft.py --selftest --backend maxmatch` |
 | Train one cell | `sbatch src/parser_train_peft.slurm <mode> <adapter> <backend>` |
 | Evaluate one cell | `python src/evaluate_peft.py --path output/parser_<cell>/yiddish_parser.pt --adapter-type <type>` |
-| LLM baseline | `python testing.py --data .../test.txt --n 30 --out results/llm_zeroshot.json` |
+| LLM baselines | `bash scripts/run_llm_baselines.sh day1` · `day2` · `table` |
 | Watch jobs | `squeue -u $USER` · `tail -f logs/peft_<jobid>.out` |
