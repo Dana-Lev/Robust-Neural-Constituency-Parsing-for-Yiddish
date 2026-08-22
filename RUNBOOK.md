@@ -445,9 +445,69 @@ python testing.py --data yiddish_parser/data/processed/supar_ready/test.txt \
     --out results/llm_fewshot.json
 ```
 
-Both runs use the same `--seed`, so they score the same 30 sentences — that is
-what makes zero-shot and few-shot comparable. Note the model ID and the date in
-the report; API models change under you.
+Both runs use the same `--seed`, so they score the same sentences — that is what
+makes zero-shot and few-shot comparable. Note the model ID and the date in the
+report; API models change under you.
+
+### Budget the run against the daily cap
+
+Free-tier limits are **per day**, not only per minute, and that decides the
+design. Check yours in the API dashboard first:
+
+| Tier | RPM | RPD | Use it for |
+|---|---:|---:|---|
+| Flash (3.x) | 5 | **20** | the headline "frontier model" number, ~20 sentences/day |
+| Flash Lite (3.x) | 15 | **500** | large samples: 100 sentences × both conditions in a day |
+
+Run two models, for two different jobs:
+
+```bash
+# exact ids for your key -- cheaper than guessing and spending a failed request
+python testing.py --list-models
+
+# frontier model, 20 sentences: fits the daily cap exactly, 100% coverage
+python testing.py --model gemini-3.7-flash --n 20 --sleep 13 \
+    --data yiddish_parser/data/processed/supar_ready/test.txt \
+    --out results/llm_frontier_zeroshot.json
+# ... then the few-shot condition the next day
+
+# large sample on a Lite tier: 100 per condition, 200 requests total
+python testing.py --model gemini-3.5-flash-lite --n 100 --sleep 5 \
+    --data yiddish_parser/data/processed/supar_ready/test.txt \
+    --out results/llm_lite_zeroshot.json
+python testing.py --model gemini-3.5-flash-lite --n 100 --shots 3 --sleep 5 \
+    --data yiddish_parser/data/processed/supar_ready/test.txt \
+    --train-file yiddish_parser/data/processed/supar_ready/train.txt \
+    --out results/llm_lite_fewshot.json
+```
+
+Report the frontier model as the primary result: the question is whether a
+*frontier* LLM can do this, and a Lite tier is the cheapest model available, so a
+Lite-only answer invites the objection that the strongest model was never tested.
+Use the Lite runs for tight estimates and the per-component breakdown, and say
+plainly which number came from which model.
+
+**One condition per file.** Never mix models in a single `--out` — averaged
+across models the scores mean nothing. `--resume` warns if you try.
+
+If a run stops early on the daily cap, top up the gaps the next day instead of
+repeating it:
+
+```bash
+python testing.py --resume results/llm_lite_zeroshot.json \
+    --model gemini-3.5-flash-lite --n 100 \
+    --data yiddish_parser/data/processed/supar_ready/test.txt
+```
+
+### Collect every run into one table
+
+```bash
+python scripts/llm_results_table.py "results/llm_*.json" --latex \
+    | tee results/llm_comparison.md
+```
+
+That prints the Markdown table plus the LaTeX rows for Table 2, so no number is
+retyped between the results and the report.
 
 **Check:** `valid_syntax_rate` and `labeled_f1` appear in the final report block,
 and the JSON files land in `results/`.
