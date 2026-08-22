@@ -291,6 +291,13 @@ python src/train_parser_peft.py --selftest --backend spm \
 **Check:** `pct_words_with_variation` > 0 and `max_pieces_observed` < 32. If the
 max approaches 32, raise `--fix-len` (SuPar truncates silently).
 
+Also confirm the `backend` line in each file says what you asked for. `--backend
+spm` needs a reachable SentencePiece model, and recent `transformers` releases
+drop the slow tokenizer that exposes one; it now raises rather than quietly
+running `maxmatch` under the `spm` name, which would have made two grid cells the
+same experiment reported twice. If spm is genuinely unavailable, run `maxmatch`
+only and say so in the write-up.
+
 **5b. Overfitting check.** The grading guidelines ask explicitly for evidence that
 the model *can* fit data — proof there is no bug:
 
