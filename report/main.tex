@@ -82,8 +82,8 @@ gold-standard data and careful modelling ``correspondingly more pressing''.
 One obstacle it identified is mundane but consequential. Multilingual subword
 vocabularies were not built for Hebrew-script Yiddish, so words shatter into many
 pieces --- in our data, an average of $2.05$ pieces per word under XLM-R
-\citep{conneau-etal-2020-unsupervised}. A previous course project
-\citep{halfon-boiman-2026-yiddish} attacked this bottleneck \emph{statically}: it
+\citep{conneau-etal-2020-unsupervised}. A previous course project in this class
+\citep{prior-course-project} attacked this bottleneck \emph{statically}: it
 extracted clean vocabulary from the Jochre corpus \citep{urieli-2025-jochre},
 injected it with FOCUS \citep{dobler-de-melo-2023-focus}, and aligned the new
 embeddings by continued pre-training. The intervention worked on its own terms ---
@@ -164,9 +164,9 @@ Remedies split into two families. \emph{Static} approaches change the vocabulary
 FOCUS \citep{dobler-de-melo-2023-focus} initialises newly added tokens as
 weighted combinations of semantically similar existing ones, so that new
 vocabulary starts life inside the model's latent space rather than at random.
-\citet{halfon-boiman-2026-yiddish} applied exactly this to Yiddish, with
-continued pre-training to consolidate it, and reported the null downstream result
-that motivates us.
+This was applied to Yiddish in a previous course project, with continued
+pre-training to consolidate it, yielding the null downstream result that motivates
+us \citep{prior-course-project}.
 
 \emph{Dynamic} approaches leave the vocabulary alone and vary the segmentation
 instead. \citet{kudo-2018-subword} samples segmentations from a unigram lattice
@@ -218,19 +218,19 @@ Table~\ref{tab:data} reports the resulting statistics.
 We retain \emph{all} PPCHY components rather than restricting to the two largest
 20th-century texts. This is deliberate: the older material carries the greatest
 orthographic variation, and therefore the heaviest subword fragmentation, which
-is precisely the phenomenon under test here. We note that
-\citet{halfon-boiman-2026-yiddish} describe following the two-text selection of
-\citet{kulick-etal-2022-part}, but report split sizes identical to ours
+is precisely the phenomenon under test here. We note that the previous project describes following the two-text selection
+of \citet{kulick-etal-2022-part}, yet reports split sizes identical to ours
 (15{,}394/855/856), which are only reachable from the full corpus; we therefore
-treat their results as whole-corpus numbers.
+read those results as whole-corpus numbers \citep{prior-course-project}.
 \todo{Optional: add one romanized example tree as a PDF figure.}
 
 \begin{table}[t]
 \centering
 \small
-\begin{tabular}{lrrr}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrr@{}}
 \toprule
-\textbf{Split} & \textbf{Sentences} & \textbf{Tokens} & \textbf{Mean len.} \\
+\textbf{Split} & \textbf{Sent.} & \textbf{Tokens} & \textbf{Mean len.} \\
 \midrule
 Train & 15{,}394 & 171{,}065 & 11.1 \\
 Dev   &     855  &   9{,}323 & 10.9 \\
@@ -264,7 +264,8 @@ explicitly rather than relying on gradients being zero.
 \begin{table}[t]
 \centering
 \small
-\begin{tabular}{lrr}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrr@{}}
 \toprule
 \textbf{Component} & \textbf{Params} & \textbf{\%} \\
 \midrule
@@ -431,11 +432,12 @@ explicitly rather than implying more.}
 \begin{table*}[t]
 \centering
 \small
-\begin{tabular}{llrrrr}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}llrrrr@{}}
 \toprule
-\textbf{Model} & \textbf{Trainable params} & \textbf{UF} & \textbf{LF} & \textbf{UCM} & \textbf{LCM} \\
+\textbf{Model} & \textbf{Trainable} & \textbf{UF} & \textbf{LF} & \textbf{UCM} & \textbf{LCM} \\
 \midrule
-\multicolumn{6}{l}{\emph{Reference (previous project, static adaptation)} \citep{halfon-boiman-2026-yiddish}} \\
+\multicolumn{6}{l}{\emph{Reference (previous project, static adaptation)} \citep{prior-course-project}} \\
 \quad Frozen baseline            & $\sim$8M  & 90.83 & 83.81 & 63.55 & 50.93 \\
 \quad FOCUS + DAPT               & $\sim$8M  & 90.16 & 83.02 & 62.50 & 49.42 \\
 \midrule
@@ -456,10 +458,11 @@ reference rows -- state it explicitly.}}
 \label{tab:main}
 \end{table*}
 
-\begin{table}[t]
+\begin{table*}[t]
 \centering
 \small
-\begin{tabular}{llrrrrr}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{@{}llrrrrr@{}}
 \toprule
 \textbf{Model} & \textbf{Cond.} & \textbf{Valid} & \textbf{Tok} & \textbf{LF} & \textbf{LF$_{\text{tok}}$} & \textbf{UF} \\
 \midrule
@@ -482,7 +485,7 @@ instruction-following. Both conditions of a tier score the same sentences.
 Models accessed \todo{date}; the 3-shot frontier run returned 19 of 20 requests
 (free-tier daily cap), all other cells 100\%.}
 \label{tab:llm}
-\end{table}
+\end{table*}
 
 \paragraph{The tokenization tax, measured.} Table~\ref{tab:fertility}
 quantifies the problem the interventions target, over $5000$ training terminals.
@@ -497,20 +500,23 @@ and leaves single-piece words untouched by construction.
 \begin{table}[t]
 \centering
 \small
-\begin{tabular}{lr}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lr@{}}
 \toprule
-\textbf{Statistic} (5000 train terminals) & \textbf{Value} \\
+\textbf{Statistic} & \textbf{Value} \\
 \midrule
-Fertility, deterministic (pieces/word) & 2.053 \\
-Fertility, sampled                     & 2.579 \\
-Mean distinct segmentations per word    & 1.395 \\
-Words with any variation               & 31.3\% \\
-Longest sampled segmentation           & 14 pieces \\
+Fertility, deterministic  & 2.053 \\
+Fertility, sampled        & 2.579 \\
+Distinct segs.\ per word  & 1.395 \\
+Words with any variation  & 31.3\% \\
+Longest sampled seg.      & 14 \\
 \bottomrule
 \end{tabular}
-\caption{Segmentation statistics for the \texttt{maxmatch} backend at $p{=}0.1$,
-from the sampler self-test. Fertility is the standard measure of the
-``tokenization tax''; the variation rate is the actual regularization signal.}
+\caption{Segmentation statistics over 5000 training terminals for the
+\texttt{maxmatch} backend at $p{=}0.1$. Fertility is subword pieces per word, the
+standard measure of the ``tokenization tax''; the variation rate is the actual
+regularization signal. The longest sampled segmentation is well inside our
+\texttt{fix\_len} of 32, so no word was silently truncated.}
 \label{tab:fertility}
 \end{table}
 
@@ -603,7 +609,7 @@ independent interventions -- static vocabulary injection, dynamic
 re-segmentation, and parameter-efficient adaptation -- have now all failed to
 move frozen-encoder parsing F1, which is much stronger evidence for the
 resilience of constituency structure to fragmentation than
-\citet{halfon-boiman-2026-yiddish}'s single null result. Emphasise the cost
+the single prior null result. Emphasise the cost
 asymmetry: the same F1 for 1--2M trainable parameters and no pre-training run.
 (2) If something does help, quantify it and say which failure mode it addresses;
 relate it to the fertility statistics in Table~\ref{tab:fertility}, since those
@@ -697,12 +703,13 @@ proportion to how little.
 \label{app:hyper}
 \begin{table}[h]
 \centering
-\small
-\begin{tabular}{lr}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lr@{}}
 \toprule
 \textbf{Hyperparameter} & \textbf{Value} \\
 \midrule
-Encoder & \texttt{skulick/xlmb-ybc-ck05} \\
+Encoder & \texttt{xlmb-ybc-ck05} \\
 Batch size (tokens)        & 2000 \\
 Max epochs / patience      & 100 / 10 \\
 Encoder LR                 & $5\times10^{-5}$ \\
@@ -710,7 +717,7 @@ Parser-head LR multiplier  & 20 \\
 Warmup fraction            & 0.1 \\
 Gradient clipping          & 5.0 \\
 LR decay / decay steps     & 0.75 / 5000 \\
-Adapter LR                 & $3\times10^{-4}$ (swept $1,3,10\times10^{-4}$) \\
+Adapter LR                 & $3\times10^{-4}$ \\
 LoRA $r$ / $\alpha$ / dropout & 16 / 32 / 0.1 \\
 LoRA targets               & query, value \\
 Bottleneck reduction       & 16 ($768\!\to\!48\!\to\!768$) \\
@@ -723,16 +730,17 @@ Seed(s)                    & \todo{1 (+2,3?)} \\
 \bottomrule
 \end{tabular}
 \caption{Training configuration, identical across cells except for the
-intervention under test.}
+intervention under test. The encoder is \texttt{skulick/xlmb-ybc-ck05}; the
+adapter learning rate was swept over $\{1,3,10\}\times10^{-4}$.}
 \end{table}
 
 Note on layer mixing: SuPar 1.1.4 always applies a scalar mix over the top
 \texttt{n\_bert\_layers} encoder layers; its \texttt{bert\_pooling} argument
 controls only how subword pieces are pooled into a word vector. We mention this
-because \citet{halfon-boiman-2026-yiddish} describe setting
-\texttt{bert\_pooling} to \texttt{scalar\_mix}, which is not one of the accepted
-values, so the configuration difference between their reported runs and ours is
-the number of mixed layers rather than the pooling mode.
+because the previous project reports setting \texttt{bert\_pooling} to
+\texttt{scalar\_mix}, which is not one of the accepted values, so the
+configuration difference between those runs and ours is the number of mixed
+layers rather than the pooling mode \citep{prior-course-project}.
 
 \section{LLM Prompts}
 \label{app:prompts}
