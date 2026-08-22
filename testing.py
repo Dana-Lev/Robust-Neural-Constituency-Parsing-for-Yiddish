@@ -287,6 +287,65 @@ def predict_tree(client, model, prompt, max_attempts=8, backoff=20):
 # MAIN
 # ---------------------------------------------------------------------------
 
+
+def summarize(results, model, shots, source, seed):
+    """
+    Aggregate per-sentence records into reportable metrics.
+
+    An API failure is NOT a model failure, and conflating the two understates the
+    model: a run that loses sentences to free-tier rate limits would otherwise
+    look like a model that emits malformed trees. Rates over the model's actual
+    behaviour are therefore computed over *responses received*, and the requests
+    that never returned are reported separately as coverage.
+    """
+    n = len(results)
+    errored = [r for r in results if r.get("error")]
+    got = [r for r in results if not r.get("error")]
+    n_got = len(got)
+
+    totals = {"labeled_match": 0, "unlabeled_match": 0, "gold_count": 0, "pred_count": 0}
+    for record in results:
+        counts = record.get("counts")
+        if counts:
+            for key in totals:
+                totals[key] += counts[key]
+
+    lp, lr, lf = prf(totals["labeled_match"], totals["pred_count"], totals["gold_count"])
+    up, ur, uf = prf(totals["unlabeled_match"], totals["pred_count"], totals["gold_count"])
+    macro_got = (sum(r["labeled_f1"] for r in got) / n_got) if n_got else 0.0
+
+    return {
+        "model": model, "shots": shots, "data": source, "seed": seed,
+        # --- coverage: how much of the sample the API actually returned ---
+        "n_sentences_attempted": n,
+        "n_responses_received": n_got,
+        "n_api_failures": len(errored),
+        "coverage_rate": round(100.0 * n_got / n, 2) if n else 0.0,
+        # --- model behaviour, over responses received ---
+        "valid_syntax_rate": round(100.0 * sum(r["valid_syntax"] for r in got) / n_got, 2) if n_got else 0.0,
+        "token_fidelity_rate": round(100.0 * sum(r["tokens_match"] for r in got) / n_got, 2) if n_got else 0.0,
+        "macro_labeled_f1": round(100 * macro_got, 2),
+        # --- corpus-level micro scores, comparable to the parser's Labeled F1 ---
+        "labeled_precision": round(100 * lp, 2), "labeled_recall": round(100 * lr, 2),
+        "labeled_f1": round(100 * lf, 2),
+        "unlabeled_precision": round(100 * up, 2), "unlabeled_recall": round(100 * ur, 2),
+        "unlabeled_f1": round(100 * uf, 2),
+    }
+
+
+def print_summary(summary):
+    print("\n" + "=" * 26 + " FINAL REPORT " + "=" * 26)
+    for key, value in summary.items():
+        print(f"  {key:<24} {value}")
+    print("=" * 66)
+    print("labeled/unlabeled P/R/F1 are corpus-level micro scores over the responses")
+    print("received, directly comparable to the SuPar parser's Labeled F1.")
+    print("valid_syntax_rate / token_fidelity_rate / macro_labeled_f1 are also over")
+    print("responses received -- API failures are reported as coverage, not as model")
+    print("errors. If coverage_rate is below 100, say so in the report and consider")
+    print("re-running with a larger --sleep.")
+
+
 def main():
     ap = argparse.ArgumentParser(description="Frontier-LLM baseline for Yiddish constituency parsing")
     ap.add_argument("--data", default=None,
@@ -297,13 +356,46 @@ def main():
     ap.add_argument("--n", type=int, default=30, help="Number of test sentences to sample.")
     ap.add_argument("--max-len", type=int, default=40, help="Skip sentences longer than this.")
     ap.add_argument("--shots", type=int, default=0, help="Number of few-shot exemplars (0 = zero-shot).")
-    ap.add_argument("--model", default="gemini-2.5-flash",
+    ap.add_argument("--model", default="gemini-3.6-flash",
                     help="Gemini model id (check availability for your key).")
     ap.add_argument("--seed", type=int, default=1, help="Sampling seed, for reproducibility.")
     ap.add_argument("--sleep", type=float, default=13.0,
                     help="Seconds between requests (13s stays under the 5 req/min free tier).")
     ap.add_argument("--out", default="llm_baseline_results.json", help="Where to write results.")
+    ap.add_argument("--recompute", metavar="RESULTS_JSON", default=None,
+                    help="Rebuild the summary from a saved results file, without "
+                         "calling the API. Use after a metric fix, or to re-read an "
+                         "older run. Writes back in place unless --out is given.")
     args = ap.parse_args()
+
+    if args.recompute:
+        with open(args.recompute, encoding="utf-8") as handle:
+            saved = json.load(handle)
+        old = saved.get("summary", {})
+        records = saved["results"]
+        for record in records:
+            if record.get("counts") is None and not record.get("error"):
+                # older runs did not store counts; recover them from the trees
+                gold = parse_tree_string(record["gold_tree"])
+                pred = parse_tree_string(record["predicted_tree"] or "")
+                if gold is not None and pred is not None:
+                    record["counts"] = score_pair(gold, pred)
+                elif gold is not None:
+                    spans, _ = get_constituents(gold)
+                    record["counts"] = {"labeled_match": 0, "unlabeled_match": 0,
+                                        "gold_count": len(spans), "pred_count": 0}
+        summary = summarize(records,
+                            model=old.get("model", "unknown"),
+                            shots=old.get("shots", 0),
+                            source=old.get("data", args.recompute),
+                            seed=old.get("seed", 0))
+        print_summary(summary)
+        out = args.out if args.out != "llm_baseline_results.json" else args.recompute
+        with open(out, "w", encoding="utf-8") as handle:
+            json.dump({"summary": summary, "results": records}, handle,
+                      ensure_ascii=False, indent=2)
+        print(f"\nRewrote {out}")
+        return
 
     rng = random.Random(args.seed)
 
@@ -334,7 +426,6 @@ def main():
     print(f"Model: {args.model} | shots: {args.shots} | data: {source} | n: {len(items)}\n")
 
     results = []
-    totals = {"labeled_match": 0, "unlabeled_match": 0, "gold_count": 0, "pred_count": 0}
 
     for index, item in enumerate(items, 1):
         prompt = build_prompt(item, exemplars)
@@ -343,7 +434,9 @@ def main():
         record = {"id": item["id"], "sentence": item["sentence"],
                   "gold_tree": item["gold_tree"], "predicted_tree": raw,
                   "valid_syntax": False, "tokens_match": False,
-                  "labeled_f1": 0.0, "unlabeled_f1": 0.0, "error": error}
+                  "labeled_f1": 0.0, "unlabeled_f1": 0.0, "error": error,
+                  # kept so --recompute can rebuild the summary without re-querying
+                  "counts": None}
 
         if raw is not None:
             pred = parse_tree_string(raw)
@@ -352,17 +445,17 @@ def main():
                 record["valid_syntax"] = True
                 record["tokens_match"] = pred.leaves() == gold.leaves()
                 counts = score_pair(gold, pred)
-                for key in totals:
-                    totals[key] += counts[key]
+                record["counts"] = counts
                 _, _, record["labeled_f1"] = prf(counts["labeled_match"],
                                                  counts["pred_count"], counts["gold_count"])
                 _, _, record["unlabeled_f1"] = prf(counts["unlabeled_match"],
                                                    counts["pred_count"], counts["gold_count"])
             else:
-                # A malformed tree still contributes its gold constituents to
-                # recall (the model found none of them) -- same as EVALB skipping.
+                # A malformed tree is a real model failure: it contributes its
+                # gold constituents to recall (the model matched none of them).
                 gold_spans, _ = get_constituents(parse_tree_string(item["gold_tree"]))
-                totals["gold_count"] += len(gold_spans)
+                record["counts"] = {"labeled_match": 0, "unlabeled_match": 0,
+                                    "gold_count": len(gold_spans), "pred_count": 0}
 
         results.append(record)
         print(f"[{index}/{len(items)}] {item['id']}")
@@ -374,32 +467,9 @@ def main():
         if index < len(items):
             time.sleep(args.sleep)
 
-    # ------------------------- summary -------------------------
-    n = len(results)
-    n_valid = sum(r["valid_syntax"] for r in results)
-    n_tokens_ok = sum(r["tokens_match"] for r in results)
-    lp, lr, lf = prf(totals["labeled_match"], totals["pred_count"], totals["gold_count"])
-    up, ur, uf = prf(totals["unlabeled_match"], totals["pred_count"], totals["gold_count"])
-    macro_lf = sum(r["labeled_f1"] for r in results) / n if n else 0.0
-
-    summary = {
-        "model": args.model, "shots": args.shots, "data": source,
-        "n_sentences": n, "seed": args.seed,
-        "valid_syntax_rate": round(100.0 * n_valid / n, 2) if n else 0.0,
-        "token_fidelity_rate": round(100.0 * n_tokens_ok / n, 2) if n else 0.0,
-        "labeled_precision": round(100 * lp, 2), "labeled_recall": round(100 * lr, 2),
-        "labeled_f1": round(100 * lf, 2),
-        "unlabeled_precision": round(100 * up, 2), "unlabeled_recall": round(100 * ur, 2),
-        "unlabeled_f1": round(100 * uf, 2),
-        "macro_labeled_f1": round(100 * macro_lf, 2),
-    }
-
-    print("\n" + "=" * 26 + " FINAL REPORT " + "=" * 26)
-    for key, value in summary.items():
-        print(f"  {key:<24} {value}")
-    print("=" * 66)
-    print("(labeled/unlabeled P/R/F1 are corpus-level micro scores, comparable to "
-          "the SuPar parser's Labeled F1; macro_labeled_f1 is the per-sentence mean)")
+    summary = summarize(results, model=args.model, shots=args.shots,
+                        source=source, seed=args.seed)
+    print_summary(summary)
 
     with open(args.out, "w", encoding="utf-8") as handle:
         json.dump({"summary": summary, "results": results}, handle, ensure_ascii=False, indent=2)

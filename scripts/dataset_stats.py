@@ -13,9 +13,16 @@ tokenizer, and the most frequent constituent labels.
 
 import argparse
 import os
+import re
 from collections import Counter
 
 from nltk.tree import Tree
+
+
+def strip_coindex(label):
+    """NP-SBJ-1 -> NP-SBJ. The scorer ignores co-indexation, so counting labels
+    with it attached inflates the inventory (402 raw vs 226 normalised here)."""
+    return re.sub(r"[-=]\d+$", "", label)
 
 
 def read_trees(path):
@@ -32,19 +39,20 @@ def read_trees(path):
     return trees, malformed
 
 
-def label_counts(tree, counter):
+def label_counts(tree, counter, raw_counter):
     for subtree in tree.subtrees():
         is_preterminal = len(subtree) == 1 and not isinstance(subtree[0], Tree)
         if not is_preterminal:
-            counter[subtree.label()] += 1
+            raw_counter[subtree.label()] += 1
+            counter[strip_coindex(subtree.label())] += 1
 
 
 def split_stats(path):
     trees, malformed = read_trees(path)
     lengths = [len(t.leaves()) for t in trees]
-    labels = Counter()
+    labels, raw_labels = Counter(), Counter()
     for tree in trees:
-        label_counts(tree, labels)
+        label_counts(tree, labels, raw_labels)
     depths = [t.height() for t in trees]
     return {
         "file": os.path.basename(path),
@@ -55,6 +63,7 @@ def split_stats(path):
         "mean_depth": sum(depths) / len(depths) if depths else 0.0,
         "malformed": malformed,
         "labels": labels,
+        "raw_labels": raw_labels,
         "trees": trees,
     }
 
@@ -116,10 +125,13 @@ def main():
         print("-" * 64)
         print(f"{'total':<12}{total_sent:>9,}{total_tok:>10,}")
 
-    all_labels = Counter()
+    all_labels, all_raw = Counter(), Counter()
     for s in stats:
         all_labels.update(s["labels"])
-    print(f"\nDistinct constituent labels: {len(all_labels)}")
+        all_raw.update(s["raw_labels"])
+    print(f"\nDistinct constituent labels: {len(all_labels)} after stripping "
+          f"co-indexation ({len(all_raw)} raw). The scorer ignores co-indexation, "
+          f"so the first number is the one to quote.")
     print(f"Top {args.top_labels} labels:")
     for label, count in all_labels.most_common(args.top_labels):
         print(f"  {label:<16}{count:>8,}")

@@ -118,25 +118,42 @@ terminology exact.}
 % Rubric: methodology is 20pt -- data, baselines, no leakage, seeds.
 
 \subsection{Data}
-\todo{PPCHY subset (Hirshbein + Olsvanger), script conversion via ppchyprep,
-the SuPar-ready splits. Give the statistics table below (verify counts against
-your actual files!) and one romanized example tree or a PDF tree figure.}
+We use the Penn Parsed Corpus of Historical Yiddish (PPCHY), converted from its
+romanized form into Hebrew script with the \texttt{ppchyprep} utility of
+\citet{kulick-etal-2022-part}, so that the conversion matches their published
+setup. Trees are normalised under a single \textsc{top} root, split 90/5/5 with
+a fixed seed, and filtered for structures the parser cannot consume.
+Table~\ref{tab:data} reports the resulting statistics.
+
+We retain \emph{all} PPCHY components rather than restricting to the two largest
+20th-century texts. This is deliberate: the older material carries the greatest
+orthographic variation, and therefore the heaviest subword fragmentation, which
+is precisely the phenomenon under test here. We note that
+\citet{halfon-boiman-2026-yiddish} describe following the two-text selection of
+\citet{kulick-etal-2022-part}, but report split sizes identical to ours
+(15{,}394/855/856), which are only reachable from the full corpus; we therefore
+treat their results as whole-corpus numbers.
+\todo{Optional: add one romanized example tree as a PDF figure.}
 
 \begin{table}[t]
 \centering
 \small
-\begin{tabular}{lrr}
+\begin{tabular}{lrrr}
 \toprule
-\textbf{Split} & \textbf{Sentences} & \textbf{Tokens} \\
+\textbf{Split} & \textbf{Sentences} & \textbf{Tokens} & \textbf{Mean len.} \\
 \midrule
-Train & \todo{15{,}394?} & \todo{...} \\
-Dev   & \todo{855?}      & \todo{...} \\
-Test  & \todo{856?}      & \todo{...} \\
+Train & 15{,}394 & 171{,}065 & 11.1 \\
+Dev   &     855  &   9{,}323 & 10.9 \\
+Test  &     856  &   9{,}619 & 11.2 \\
+\midrule
+Total & 17{,}105 & 190{,}007 & 11.1 \\
 \bottomrule
 \end{tabular}
-\caption{PPCHY data statistics (SuPar-ready splits). \todo{Verify from
-\texttt{data/processed/supar\_ready/} -- do not copy numbers from the previous
-project without checking.}}
+\caption{PPCHY data statistics for our SuPar-ready splits (all corpus
+components, 90/5/5 split, seed 42). No tree was rejected by the cleaning step.
+The treebank uses 226 distinct constituent labels once co-indexation suffixes are
+stripped (402 with them); the most frequent are \textsc{np-sbj} (19{,}565),
+\textsc{ip-mat} (14{,}164) and \textsc{pp} (13{,}590).}
 \label{tab:data}
 \end{table}
 
@@ -165,16 +182,25 @@ explain why. Report adapter parameter counts ($\sim$1--2M).}
 
 \subsection{Frontier-LLM Control Experiment}
 % This answers the instructor's question: is a custom model still needed?
-\todo{Describe the LLM baseline (\texttt{testing.py}): $N$ sentences sampled
-from the PPCHY \emph{test} split, prompted zero-shot and few-shot ($k{=}3$
-exemplars from the \emph{train} split) to produce PPCHY-style trees with the
-gold tokenization given; strict decoding at temperature 0. Evaluation:
-EVALB-style Labeled/Unlabeled F1 (preterminals excluded, TOP/punctuation
-deleted, co-indexation stripped -- the same conventions as the SuPar
-evaluation), plus syntactic validity rate and token fidelity rate. Models:
-Gemini \citep{geminiteam-2023-gemini}; optionally GPT-4-class
-\citep{openai-2023-gpt4}. State the exact model IDs and dates -- API models
-change over time.}
+The research question this project inherits was posed in 2022. Before building a
+dedicated parser it is therefore worth asking whether a current general-purpose
+model already solves the task. We sample 30 sentences from the PPCHY
+\emph{test} split (seed 1, sentences of at most 40 tokens) and prompt Gemini
+\citep{geminiteam-2023-gemini} to return a PPCHY-style bracketed tree at
+temperature 0, given the gold tokenization and instructed to reuse those tokens
+exactly. Few-shot runs draw $k{=}3$ exemplars from the \emph{training} split
+only, so no evaluated sentence is ever shown to the model.
+
+Predictions are scored with the same conventions as the SuPar evaluation
+(preterminals excluded, \textsc{top} and punctuation deleted, co-indexation
+suffixes stripped, \textsc{advp}$\equiv$\textsc{prt}), which makes the Labeled
+F1 directly comparable to the parser's. We additionally report three diagnostics
+that a single F1 conflates: \emph{coverage}, the share of requests the API
+actually returned; \emph{syntactic validity}, the share of returned answers that
+parse as well-formed trees; and \emph{token fidelity}, the share that reproduce
+the given tokens exactly. Reporting an API failure as a model error would
+understate the model, so all behavioural rates are computed over responses
+received and coverage is reported separately.
 
 % =====================================================================
 \section{Experimental Setup}
@@ -225,22 +251,50 @@ reference rows -- state it explicitly.}}
 \toprule
 \textbf{System} & \textbf{Valid} & \textbf{Tok} & \textbf{LF} & \textbf{UF} \\
 \midrule
-Gemini zero-shot   & \todo{} & \todo{} & \todo{} & \todo{} \\
-Gemini 3-shot      & \todo{} & \todo{} & \todo{} & \todo{} \\
+Gemini zero-shot    & 100.0 & 95.5 & 54.67 & 79.58 \\
+Gemini 3-shot       & \todo{} & \todo{} & \todo{} & \todo{} \\
 \midrule
-SuPar parser (ours) & 100 & 100 & \todo{} & \todo{} \\
+SuPar parser (ours) & 100.0 & 100.0 & \todo{} & \todo{} \\
 \bottomrule
 \end{tabular}
-\caption{Frontier-LLM control on \todo{$N$} PPCHY test sentences (\%).
-Valid = well-formed bracketing rate; Tok = token fidelity rate.
-\todo{Fill from llm\_baseline\_results.json. State model ID + access date.}}
+\caption{Frontier-LLM control on 30 PPCHY test sentences (\%).
+Valid = share of returned answers that parse as well-formed trees;
+Tok = token fidelity. LF/UF are corpus-level micro labeled/unlabeled F1.
+Zero-shot coverage was 73.3\% (22/30 requests returned; the remaining 8 were
+lost to free-tier rate limits), and all rates are computed over the responses
+received. Model \texttt{gemini-3.6-flash}, accessed \todo{date}.}
 \label{tab:llm}
 \end{table}
 
-\todo{Present: (1) the main ablation table; (2) the fertility/segmentation
-variation statistics; (3) the LLM control table; (4) a training-curve or
-results-summary figure as PDF. For every table, one paragraph of what it
-shows.}
+\todo{Present the main ablation table (Table~\ref{tab:main}), the
+fertility/segmentation statistics from the sampler self-test, and a
+training-curve figure as PDF. One paragraph per table.}
+
+\paragraph{The LLM control.} Table~\ref{tab:llm} shows that a current frontier
+model is a competent but non-conformant parser of historical Yiddish. Every
+answer it returned was a well-formed tree, and 95.5\% reproduced the supplied
+tokenization exactly, so the failures are not formatting failures. The
+informative result is the gap between the two F1 measures: unlabeled F1 is
+79.58 while labeled F1 is 54.67, a difference of 24.9 points, and 18 of the 22
+scored sentences have a higher unlabeled than labeled score. The model recovers
+much of the bracketing and then labels it wrongly.
+
+The label errors are systematic rather than random. Only 12.5\% of predicted
+constituents carry a label outside this treebank's 226-label inventory, and
+those are dominated by \textsc{np-ob1} and \textsc{np-ob2} -- labels from the
+Penn historical family, but from a different member of it than this PPCHY
+release, which marks the same arguments \textsc{np-acc} and \textsc{np-dtv}. The
+model has evidently absorbed Penn-style historical annotation in general and
+selected the wrong variant of it, rather than failing to analyse Yiddish.
+
+Even read charitably, this does not displace a trained parser: 54.67 labeled F1
+is roughly 29 points below the frozen-encoder baseline, and even the model's
+\emph{unlabeled} score does not reach the baseline's \emph{labeled} score.
+\todo{Once the 3-shot run is in, state whether exemplars close the
+scheme-variant gap. That is the decisive follow-up: if three examples move
+labeled F1 sharply, the deficit is conventional, and if they do not, it is
+a genuine limit on zero-shot structural analysis of a low-resource historical
+language.}
 
 % =====================================================================
 \section{Discussion}
@@ -253,10 +307,13 @@ structure is resilient to subword fragmentation, extending
 PEFT reaches the same F1 with $\sim$1--2M trainable parameters and zero
 pre-training.
 (2) If something helps: quantify, and relate to which failure mode it fixes.
-(3) LLM control: relate the zero-/few-shot numbers to the trained parser's
-83+ LF. If the gap is large, the custom model is justified; discuss \emph{why}
-LLMs struggle (scheme mismatch vs.\ language competence -- token fidelity and
-unlabeled F1 help separate these).
+(3) LLM control: the zero-shot deficit is large (54.67 vs.\ 83+ LF) and its
+shape is diagnostic. High token fidelity, perfect well-formedness and a 24.9
+point labeled/unlabeled gap together indicate a scheme-conformance problem
+layered on top of a real but incomplete syntactic analysis -- not an inability
+to read the language. The dedicated parser is therefore justified, and the
+justification is specifically about \emph{annotation-faithful} structure, which
+is what a treebank-based tool provides and a generalist model does not.
 (4) Negative results are explicitly valued by the rubric if analyzed well.}
 
 % =====================================================================
@@ -264,9 +321,15 @@ unlabeled F1 help separate these).
 \todo{3-5 sentences: question, method, answer, one-sentence outlook.}
 
 \section*{Limitations}
-\todo{Historical text only; single language; one encoder; small test sample
-for the LLM control (API cost); one/few seeds if that ends up true; LLM
-results depend on prompt + model version and may not be stable over time.}
+Our evidence has several bounds. The treebank is historical, so conclusions may
+not transfer to modern Yiddish; we test one encoder and one parsing formalism.
+The LLM control uses 30 test sentences, and free-tier rate limits reduced
+zero-shot coverage to 22 of those 30, so its confidence interval is wide and the
+comparison should be read as an order-of-magnitude check rather than a precise
+measurement. LLM results also depend on the prompt and on a model version that
+providers change without notice; we report the exact model identifier and date
+for that reason. \todo{Add: number of seeds actually run, and any grid cell that
+did not finish.}
 
 % Required by the course guidelines (transparency, not graded).
 \section*{AI Disclosure and Reflection}
@@ -311,8 +374,18 @@ Seed(s)                    & \todo{1 (+2,3?)} \\
 \todo{Reproduce the exact zero-shot and few-shot prompt templates from
 \texttt{testing.py}, and one full example of model input/output.}
 
+\section{LLM Label Confusions}
+\label{app:labels}
+Of 152 constituents predicted across the 22 scored zero-shot answers, 19
+(12.5\%) carry labels absent from this treebank's inventory: \textsc{np-ob1}
+(11), \textsc{np-ob2} (2), \textsc{*t*} (2), and one each of \textsc{cp-que},
+\textsc{np-ob1-rsp}, \textsc{np-dat} and \textsc{cp-que-spe}. These are
+Penn-historical labels used by sibling corpora; this PPCHY release writes the
+corresponding arguments \textsc{np-acc} and \textsc{np-dtv}.
+
 \section{Example Parses}
 \todo{Optional: one gold vs.\ predicted tree (as PDF figures), one Gemini
-failure case.}
+failure case -- a good candidate is the sentence where it emitted
+\textsc{frag}/\textsc{intj} for a \textsc{qtp} quotation structure.}
 
 \end{document}
