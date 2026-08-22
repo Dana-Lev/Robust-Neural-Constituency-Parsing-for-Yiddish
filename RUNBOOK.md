@@ -338,17 +338,34 @@ GPU IS VISIBLE BUT CANNOT RUN KERNELS
   ... this GPU is sm_61; this torch build supports sm_75 sm_80 ...
 ```
 
-Two ways out. Prefer the first if the partition has newer cards:
+As of writing, `studentkillable` mixes two card generations:
+
+```
+s-[002-003], s-006   titan_xp            sm_61   -- unusable with current wheels
+s-[004-005]          geforce_rtx_2080    sm_75   -- fine
+```
+
+The job scripts therefore carry `#SBATCH --constraint=geforce_rtx_2080`, which
+is why they land on a card the wheel supports. Re-check the mix yourself, since
+the partition changes:
 
 ```bash
-# 1. see what GPU types exist, then ask for one that is supported
 sinfo -p studentkillable -o "%20N %10G %30f"
-sbatch --gres=gpu:<newer-type>:1 src/parser_train_peft.slurm baseline
-
-# 2. or install a torch new enough for the CUDA 12.9 driver and old enough to
-#    still ship sm_61 kernels
-pip install --force-reinstall torch==2.5.1 --index-url https://download.pytorch.org/whl/cu121
 ```
+
+Only two nodes carry the supported cards, so queue waits are longer. If that
+becomes the bottleneck, install a torch that still ships `sm_61` kernels and drop
+the constraint to use all five nodes:
+
+```bash
+pip install --force-reinstall torch==2.5.1 --index-url https://download.pytorch.org/whl/cu121
+sbatch --constraint="" src/parser_train_peft.slurm baseline
+```
+
+Note the RTX 2080 has 8 GB against the TITAN Xp's 12 GB. If a cell hits
+out-of-memory, add `--grad-checkpointing` (roughly 30% slower steps, much less
+activation memory) rather than lowering the batch size, which would change the
+comparison.
 
 Verify either fix in seconds, without queueing a training job:
 

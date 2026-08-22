@@ -4,6 +4,12 @@
 #SBATCH --error=logs/train_%j.err
 #SBATCH --partition=studentkillable   
 #SBATCH --gpus=1
+# The partition mixes TITAN Xp (sm_61) and RTX 2080 (sm_75) nodes, and
+# current PyTorch wheels build no kernels below sm_75 -- on a TITAN Xp the
+# job starts, reports cuda, then dies at the first kernel launch. Pin to
+# the supported cards. Override with `sbatch --constraint=...` (or drop it
+# entirely if you install a torch that still ships sm_61 kernels).
+#SBATCH --constraint=geforce_rtx_2080
 #SBATCH --time=23:00:00               
 #SBATCH --cpus-per-task=4
 #SBATCH --mem=32G
