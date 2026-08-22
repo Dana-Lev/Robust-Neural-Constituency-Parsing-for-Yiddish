@@ -471,9 +471,14 @@ explicitly rather than implying more.}
 \midrule
 Frozen baseline              & 11.86M & 85.24 & 74.89 & 43.93 & 31.43 \\
 \midrule
-+ Subword reg.\ (maxmatch)   & 11.86M & \todo{} & \todo{} & \todo{} & \todo{} \\
-+ Adapters (LoRA)            & 12.45M & \todo{} & \todo{} & \todo{} & \todo{} \\
-+ Adapters (bottleneck)      & 12.76M & \todo{} & \todo{} & \todo{} & \todo{} \\
++ Subword reg.\ (maxmatch)   & 11.86M & 85.58 & 75.32 & 45.21 & 33.29 \\
+\quad \emph{vs.\ baseline}   &        & \emph{+0.34} & \emph{+0.43} & \emph{+1.28} & \emph{+1.86} \\
+\midrule
++ Adapters (LoRA)            & 12.45M & 89.75 & \textbf{82.02} & 58.53 & 46.73 \\
+\quad \emph{vs.\ baseline}   &        & \emph{+4.51} & \emph{+7.13} & \emph{+14.60} & \emph{+15.30} \\
++ Adapters (bottleneck)      & 12.76M & 89.43 & \textbf{82.09} & 56.66 & 45.09 \\
+\quad \emph{vs.\ baseline}   &        & \emph{+4.19} & \emph{+7.20} & \emph{+12.73} & \emph{+13.66} \\
+\midrule
 + Both (maxmatch + LoRA)     & 12.45M & \todo{} & \todo{} & \todo{} & \todo{} \\
 \bottomrule
 \end{tabular}
@@ -481,8 +486,9 @@ Frozen baseline              & 11.86M & 85.24 & 74.89 & 43.93 & 31.43 \\
 labeled F1; UCM/LCM = complete-match rates; Trainable = parameters updated, of
 $281.3$M total. Every cell shares the configuration in
 Appendix~\ref{app:hyper} and differs only in the intervention named.
-\todo{Fill from evaluate\_peft.py output, add $\pm$std if more than one seed
-completed, and state the adapter parameter counts in the Trainable column.}}
+Adapters add $589{,}824$ (LoRA) or $894{,}528$ (bottleneck) parameters
+to the head's $11.86$M. \todo{Add the combined cell when it finishes, and
+$\pm$std if a second seed completes.}}
 \label{tab:main}
 \end{table*}
 
@@ -565,8 +571,32 @@ the labels are the harder problem, which is the same asymmetry the LLM control
 exhibits far more severely. And this number is obtained with a frozen backbone, so
 it is a floor for what the encoder already knows rather than a ceiling on the
 architecture.
-\todo{Add the remaining rows of Table~\ref{tab:main} and one paragraph comparing
-them to this baseline once the grid finishes.}
+\paragraph{Segmentation noise is not the bottleneck.} Resampling subword
+segmentation during training moves labeled F1 by $+0.43$ points, from $74.89$ to
+$75.32$ (Table~\ref{tab:main}). The intervention was demonstrably active --- the
+training loader resampled every batch, fertility rose from $2.04$ to $2.55$
+pieces per word, and $31.7\%$ of words received more than one segmentation --- so
+this is a measurement of the idea, not of a misconfiguration. Complete-match
+rates move slightly more ($+1.86$ labeled), consistent with a mild regularisation
+effect, but nothing here suggests that a parser over a frozen multilingual
+encoder is meaningfully limited by \emph{how} Yiddish words are split.
+
+\paragraph{Encoder capacity is.} Both adapter families produce a large gain:
+$+7.13$ labeled F1 for LoRA ($82.02$) and $+7.20$ for Pfeiffer bottlenecks
+($82.09$). The effect on whole-sentence accuracy is larger still --- labeled
+complete match rises from $31.43\%$ to $46.73\%$, so the share of test sentences
+parsed perfectly under the full function-tagged scheme grows by almost half again.
+This is bought with $589{,}824$ and $894{,}528$ trainable parameters
+respectively, under $0.35\%$ of the frozen backbone, and no pre-training.
+
+Two features of this result argue that it is real rather than an artifact of one
+lucky run. The two adapter families are architecturally unrelated --- low-rank
+updates to attention projections versus bottleneck residuals after each layer's
+LayerNorm --- yet they land $0.07$ F1 apart, which is the kind of agreement one
+expects when both are recovering the same underlying capability. And the bottleneck
+adapters are zero-initialised, so at step $0$ that model \emph{is} the baseline;
+every point of the gain was learned by $894{,}528$ parameters that started as an
+identity function.
 
 \paragraph{The LLM control.} Table~\ref{tab:llm} reports two model tiers, each
 with a matched zero-shot and 3-shot condition over the same sentences. Three
@@ -574,7 +604,7 @@ findings hold across both tiers.
 
 First, \textbf{no configuration approaches a trained parser.} The best cell is
 the frontier model with exemplars, at $54.24$ labeled F1 --- $20.7$ points below
-our frozen-encoder baseline, or $72\%$ of its score. Its \emph{unlabeled} F1
+our frozen-encoder baseline and $27.9$ below our best adapted parser. Its \emph{unlabeled} F1
 ($73.73$) does not even reach the baseline's \emph{labeled} F1 ($74.89$): the
 parser assigns full function-tagged labels more accurately than the language
 model draws unlabeled brackets. A dedicated parser is therefore not made
@@ -622,6 +652,66 @@ of historical Yiddish.
 
 % =====================================================================
 \section{Discussion}
+
+\paragraph{What the LLM control settles.} The deficit is large and, more usefully,
+structured. Output is essentially always well-formed; the labeled/unlabeled gap
+persists across every condition; and the apparent benefit of in-context examples
+halves once token fidelity is controlled for. Taken together these say that the
+models can read historical Yiddish and produce plausible constituent structure,
+but cannot reliably deliver \emph{annotation-faithful} analyses of it. That is
+precisely the capability a treebank-trained parser supplies, and it is why the
+existence of strong general-purpose models does not retire this task.
+
+\paragraph{A methodological point.} Token fidelity deserves to be reported
+routinely in LLM parsing evaluations. In our Lite zero-shot condition, $56$ of
+$100$ answers failed to reproduce the supplied tokens, and those answers score
+near zero by construction --- a tree over different terminals cannot align to the
+gold spans at all. An evaluation reporting only F1 would have attributed that to
+parsing inability. The distinction is not cosmetic: it changes the headline number
+by more than twenty points and it points at a different fix (prompt and decoding
+constraints, rather than model capability).
+
+\paragraph{On our own measurement.} We twice found that a plausible-looking
+number was an artifact rather than a result: an API rate-limit failure counted as
+a model error, and a label inventory counted with co-indexation attached. Both
+were caught because the pipeline stores per-sentence records and can recompute
+summaries without re-querying. We would recommend that design to anyone
+evaluating a paid API: the ability to re-derive every metric offline is worth more
+than the disk it costs.
+
+\paragraph{The fragmentation framing was the wrong diagnosis.} The premise we
+inherited was that Yiddish parsing is held back by subword fragmentation, and the
+established response is to repair the vocabulary. Our two interventions separate
+that premise into its parts, and they disagree sharply. Perturbing the
+segmentation --- attacking fragmentation as directly as one can without touching
+the vocabulary --- yields $+0.43$ labeled F1. Giving the frozen encoder a small
+amount of trainable capacity, while leaving segmentation exactly as it was, yields
+$+7.13$. The encoder was not being held back by how words are split; it was being
+held back by not being allowed to adapt at all.
+
+That reading also explains why the two adapter families agree to within $0.07$
+F1 despite having little in common architecturally. If the gain came from some
+specific inductive bias, one would expect them to differ; if it comes from the
+mere availability of task-adapted capacity inside the encoder, one would expect
+convergence. The parameter counts sharpen the point: $0.59$M trainable
+parameters, $0.2\%$ of the frozen backbone, recover seven points of labeled F1
+that no amount of segmentation noise could reach.
+
+\paragraph{What this says about static vocabulary adaptation.} We did not run the
+static route, so we cannot compare directly against it. But our result predicts
+where its benefit would have to come from. Vocabulary injection changes which
+pieces the encoder sees; our subword-regularization cell shows that this class of
+change moves parsing F1 very little on a frozen encoder. Injection is also
+normally paired with continued pre-training, which \emph{does} update encoder
+weights --- and that, on our evidence, is the part that would matter. A cheaper
+test of the same hypothesis is simply to let a small adapter learn.
+
+\paragraph{A caveat we cannot remove.} Every cell here is a single seed. The
+$+7$ point gap is far too large to be seed noise at this corpus size, and the
+independent agreement of two adapter families is reassuring, but the $+0.43$
+subword-regularization result is well within the range where a seed sweep could
+change its sign. We report it as ``no meaningful effect'', not as a precise
+estimate of zero.
 
 \paragraph{What the LLM control settles.} The deficit is large and, more usefully,
 structured. Output is essentially always well-formed; the labeled/unlabeled gap
