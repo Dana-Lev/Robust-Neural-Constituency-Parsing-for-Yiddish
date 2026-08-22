@@ -16,13 +16,33 @@ import json
 import os
 
 
+def micro_lf(records):
+    """Corpus-level labeled F1 over a subset of records."""
+    m = p = g = 0
+    for r in records:
+        c = r.get("counts")
+        if c:
+            m += c["labeled_match"]; p += c["pred_count"]; g += c["gold_count"]
+    prec = m / p if p else 0.0
+    rec = m / g if g else 0.0
+    return round(100 * (2 * prec * rec / (prec + rec) if (prec + rec) else 0.0), 2)
+
+
 def load(path):
     with open(path, encoding="utf-8") as handle:
         data = json.load(handle)
     s = data.get("summary", {})
     records = data.get("results", [])
     models = sorted({r.get("model") for r in records if r.get("model")})
+    got = [r for r in records if not r.get("error")]
+    faithful = [r for r in got if r.get("tokens_match")]
     return {
+        # LF restricted to answers that reproduced the given tokens. Without
+        # this, LF conflates "cannot parse" with "did not copy the tokens":
+        # a tree over different terminals cannot align to the gold spans at all.
+        "lf_faithful": micro_lf(faithful),
+        "n_faithful": len(faithful),
+        "n_got": len(got),
         "file": os.path.basename(path),
         "model": s.get("model", models[0] if models else "?"),
         "mixed_models": len(models) > 1,
@@ -62,6 +82,14 @@ def main():
     for r in rows:
         print(f"| {condition(r)} | {r['n']} | {r['got']} | {r['coverage']} | "
               f"{r['valid']} | {r['tok']} | **{r['lf']}** | {r['uf']} |")
+
+    print("\nLabeled F1 restricted to answers that reproduced the given tokens "
+          "(separating parsing ability from instruction-following):\n")
+    print("| Condition | Token-faithful | LF (all) | LF (faithful only) |")
+    print("|---|---:|---:|---:|")
+    for r in rows:
+        print(f"| {condition(r)} | {r['n_faithful']}/{r['n_got']} | {r['lf']} | "
+              f"**{r['lf_faithful']}** |")
 
     print("\nLabeled P/R and macro LF:\n")
     print("| Condition | LP | LR | Macro LF |")

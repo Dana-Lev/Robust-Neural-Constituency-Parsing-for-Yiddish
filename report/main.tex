@@ -247,22 +247,28 @@ reference rows -- state it explicitly.}}
 \begin{table}[t]
 \centering
 \small
-\begin{tabular}{lrrrr}
+\begin{tabular}{llrrrrr}
 \toprule
-\textbf{System} & \textbf{Valid} & \textbf{Tok} & \textbf{LF} & \textbf{UF} \\
+\textbf{Model} & \textbf{Cond.} & \textbf{Valid} & \textbf{Tok} & \textbf{LF} & \textbf{LF$_{\text{tok}}$} & \textbf{UF} \\
 \midrule
-Gemini zero-shot    & 100.0 & 95.5 & 54.67 & 79.58 \\
-Gemini 3-shot       & \todo{} & \todo{} & \todo{} & \todo{} \\
+\multicolumn{7}{l}{\emph{Frontier tier} (\texttt{gemini-3.5-flash}, $n{=}20$)} \\
+\quad & zero-shot & 95.0 & 70.0 & 45.53 & 59.65 & 64.23 \\
+\quad & 3-shot    & 94.7 & 84.2 & \textbf{54.24} & \textbf{63.39} & 73.73 \\
 \midrule
-SuPar parser (ours) & 100.0 & 100.0 & \todo{} & \todo{} \\
+\multicolumn{7}{l}{\emph{Lite tier} (\texttt{gemini-3.5-flash-lite}, $n{=}100$)} \\
+\quad & zero-shot & 86.0 & 44.0 & 24.74 & 46.41 & 42.46 \\
+\quad & 3-shot    & 86.0 & 71.0 & 37.76 & 51.35 & 54.34 \\
+\midrule
+\multicolumn{2}{l}{SuPar parser (ours)} & 100.0 & 100.0 & \todo{} & \todo{} & \todo{} \\
 \bottomrule
 \end{tabular}
-\caption{Frontier-LLM control on 30 PPCHY test sentences (\%).
-Valid = share of returned answers that parse as well-formed trees;
-Tok = token fidelity. LF/UF are corpus-level micro labeled/unlabeled F1.
-Zero-shot coverage was 73.3\% (22/30 requests returned; the remaining 8 were
-lost to free-tier rate limits), and all rates are computed over the responses
-received. Model \texttt{gemini-3.6-flash}, accessed \todo{date}.}
+\caption{Frontier-LLM control (\%). Valid = share of returned answers that parse
+as well-formed trees; Tok = share reproducing the supplied tokenization exactly;
+LF/UF = corpus-level micro labeled/unlabeled F1; LF$_{\text{tok}}$ = labeled F1
+computed only over token-faithful answers, which separates parsing ability from
+instruction-following. Both conditions of a tier score the same sentences.
+Models accessed \todo{date}; the 3-shot frontier run returned 19 of 20 requests
+(free-tier daily cap), all other cells 100\%.}
 \label{tab:llm}
 \end{table}
 
@@ -270,22 +276,40 @@ received. Model \texttt{gemini-3.6-flash}, accessed \todo{date}.}
 fertility/segmentation statistics from the sampler self-test, and a
 training-curve figure as PDF. One paragraph per table.}
 
-\paragraph{The LLM control.} Table~\ref{tab:llm} shows that a current frontier
-model is a competent but non-conformant parser of historical Yiddish. Every
-answer it returned was a well-formed tree, and 95.5\% reproduced the supplied
-tokenization exactly, so the failures are not formatting failures. The
-informative result is the gap between the two F1 measures: unlabeled F1 is
-79.58 while labeled F1 is 54.67, a difference of 24.9 points, and 18 of the 22
-scored sentences have a higher unlabeled than labeled score. The model recovers
-much of the bracketing and then labels it wrongly.
+\paragraph{The LLM control.} Table~\ref{tab:llm} reports two model tiers, each
+with a matched zero-shot and 3-shot condition over the same sentences. Three
+findings hold across both tiers.
 
-The label errors are systematic rather than random. Only 12.5\% of predicted
-constituents carry a label outside this treebank's 226-label inventory, and
-those are dominated by \textsc{np-ob1} and \textsc{np-ob2} -- labels from the
+First, \textbf{no configuration approaches a trained parser.} The best cell is
+the frontier model with exemplars, at 54.24 labeled F1 -- roughly 30 points
+below the frozen-encoder baseline, and its \emph{unlabeled} score (73.73) still
+falls short of the baseline's \emph{labeled} score. A dedicated parser is
+therefore not made redundant by current general-purpose models.
+
+Second, \textbf{exemplars help, and the effect replicates.} Labeled F1 rises
+$+8.7$ points on the frontier tier and $+13.0$ on the Lite tier. Per sentence,
+the 3-shot condition is better on 48 of 100 Lite sentences and worse on 20
+(sign test $p<0.001$); on the smaller frontier sample it is better on 9 of 19
+and worse on 2 ($p=0.07$).
+
+Third, and least expected, \textbf{most of that gain is instruction-following
+rather than parsing.} Token fidelity -- reproducing the supplied tokens exactly
+-- rises from 44\% to 71\% on the Lite tier and 70\% to 84\% on the frontier
+tier, and answers that fail it score near the floor (13.9 LF on Lite, versus
+51.2 for faithful answers). Restricting the comparison to token-faithful
+answers shrinks the few-shot gain from $+13.0$ to $+4.9$ points on Lite and
+from $+8.7$ to $+3.7$ on the frontier tier. What the exemplars mainly teach is
+the output contract, not Yiddish syntax.
+
+Where labels do go wrong, the errors are systematic rather than random. In a
+zero-shot pilot run (Appendix~\ref{app:labels}), only 12.5\% of predicted
+constituents carried a label outside this treebank's 226-label inventory, and
+those were dominated by \textsc{np-ob1} and \textsc{np-ob2} -- labels from the
 Penn historical family, but from a different member of it than this PPCHY
 release, which marks the same arguments \textsc{np-acc} and \textsc{np-dtv}. The
-model has evidently absorbed Penn-style historical annotation in general and
-selected the wrong variant of it, rather than failing to analyse Yiddish.
+models have absorbed Penn-style historical annotation in general and select the
+wrong variant of it, rather than failing to analyse Yiddish; the 3-shot
+conditions visibly adopt this corpus's inventory instead.
 
 Even read charitably, this does not displace a trained parser: 54.67 labeled F1
 is roughly 29 points below the frozen-encoder baseline, and even the model's
@@ -307,13 +331,16 @@ structure is resilient to subword fragmentation, extending
 PEFT reaches the same F1 with $\sim$1--2M trainable parameters and zero
 pre-training.
 (2) If something helps: quantify, and relate to which failure mode it fixes.
-(3) LLM control: the zero-shot deficit is large (54.67 vs.\ 83+ LF) and its
-shape is diagnostic. High token fidelity, perfect well-formedness and a 24.9
-point labeled/unlabeled gap together indicate a scheme-conformance problem
-layered on top of a real but incomplete syntactic analysis -- not an inability
-to read the language. The dedicated parser is therefore justified, and the
-justification is specifically about \emph{annotation-faithful} structure, which
-is what a treebank-based tool provides and a generalist model does not.
+(3) LLM control: the deficit is large (best cell 54.24 vs.\ 83+ LF) and its
+shape is diagnostic. Well-formed output, a persistent labeled/unlabeled gap, and
+a few-shot gain that halves once token fidelity is controlled for, together
+indicate an output-conformance problem layered on a real but incomplete
+syntactic analysis -- not an inability to read the language. The dedicated
+parser is justified specifically for \emph{annotation-faithful} structure, which
+is what a treebank-trained tool provides and a generalist model does not. It
+also suggests that LLM evaluations on treebank tasks should report token
+fidelity: without it, a model that cannot follow the output contract is
+indistinguishable from one that cannot parse.
 (4) Negative results are explicitly valued by the rubric if analyzed well.}
 
 % =====================================================================
@@ -323,10 +350,11 @@ is what a treebank-based tool provides and a generalist model does not.
 \section*{Limitations}
 Our evidence has several bounds. The treebank is historical, so conclusions may
 not transfer to modern Yiddish; we test one encoder and one parsing formalism.
-The LLM control uses 30 test sentences, and free-tier rate limits reduced
-zero-shot coverage to 22 of those 30, so its confidence interval is wide and the
-comparison should be read as an order-of-magnitude check rather than a precise
-measurement. LLM results also depend on the prompt and on a model version that
+The LLM control uses 20 sentences per frontier condition and 100 per Lite
+condition; free-tier daily caps bounded the former, so the frontier comparison
+in particular has a wide confidence interval and the sign test over 19 paired
+sentences only reaches $p=0.07$. The Lite tier, where 100 sentences were
+affordable, is where the few-shot effect is statistically clear. LLM results also depend on the prompt and on a model version that
 providers change without notice; we report the exact model identifier and date
 for that reason. \todo{Add: number of seeds actually run, and any grid cell that
 did not finish.}

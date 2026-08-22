@@ -1,0 +1,378 @@
+{
+  "summary": {
+    "model": "gemini-3.5-flash",
+    "shots": 3,
+    "data": "yiddish_parser/data/processed/supar_ready/test.txt",
+    "seed": 1,
+    "n_sentences_attempted": 20,
+    "n_responses_received": 19,
+    "n_api_failures": 1,
+    "coverage_rate": 95.0,
+    "valid_syntax_rate": 94.74,
+    "token_fidelity_rate": 84.21,
+    "macro_labeled_f1": 56.24,
+    "labeled_precision": 54.24,
+    "labeled_recall": 54.24,
+    "labeled_f1": 54.24,
+    "unlabeled_precision": 73.73,
+    "unlabeled_recall": 73.73,
+    "unlabeled_f1": 73.73
+  },
+  "results": [
+    {
+      "id": "test.txt:138",
+      "sentence": "דען װאַס װער אַלס ניץ גיװעסט דער_װײל דז הקבה האַט יו אַלס פֿון זײנם קבוד װעגן בישפֿן",
+      "gold_tree": "(TOP (CP-QUE-MAT (CONJ דען) (WNP-1 (WPRO װאַס)) (IP-SUB (BEF װער) (NP-SBJ (Q אַלס)) (ADJP-PRD (ADJ ניץ)) (VBN גיװעסט) (CP-ADV (ADV דער_װײל) (C דז) (IP-SUB (NP-SBJ (H הקבה)) (HVF האַט) (ADVP-DIAGN (ADV יו)) (NP-ACC (Q אַלס)) (PP (P פֿון) (NP (NP-COM (PRO$ זײנם) (N קבוד)) (N װעגן))) (VBN בישפֿן))))))",
+      "predicted_tree": "(TOP (IP-MAT (CONJ דען) (NP-SBJ (WPRO װאַס)) (BED װער) (VP (Q אַלס) (ADJP-PRD (ADJ ניץ)) (BEN גיװעסט)) (CP-ADV (C דער_װײל) (C דז) (IP-SUB (NP-SBJ (NPR הקבה)) (HVP האַט) (VP (ADVP (ADV יו)) (NP-OB1 (Q אַלס)) (PP (P פֿון) (NP (PRO$ זײנם) (N קבוד)) (P װעגן)) (VBN בישפֿן))))))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.4,
+      "unlabeled_f1": 0.8,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 5,
+        "unlabeled_match": 10,
+        "gold_count": 13,
+        "pred_count": 12
+      }
+    },
+    {
+      "id": "test.txt:588",
+      "sentence": "זײן גיװעזין אױס גליל סל מיץ",
+      "gold_tree": "(TOP (IP-MAT (BEF זײן) (VBN גיװעזין) (PP (P אױס) (NP (H גליל) (H סל) (NPR מיץ)))))",
+      "predicted_tree": "(TOP (IP-MAT (BEP זײן) (BEN גיװעזין) (PP (P אױס) (NP (N גליל) (PP (P סל) (NP (NPR מיץ))))))",
+      "valid_syntax": false,
+      "tokens_match": false,
+      "labeled_f1": 0.0,
+      "unlabeled_f1": 0.0,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 0,
+        "unlabeled_match": 0,
+        "gold_count": 3,
+        "pred_count": 0
+      }
+    },
+    {
+      "id": "test.txt:829",
+      "sentence": "װאָס באַדאַרף זי זיצן אַלײן",
+      "gold_tree": "(TOP (CP-QUE-MAT (WNP-1 (WPRO װאָס)) (IP-SUB (MDF באַדאַרף) (NP-SBJ (PRO זי)) (VB זיצן) (ADJP-SPR (ADJ אַלײן)))))",
+      "predicted_tree": "(TOP (CP-QUE (WADVP (WADV װאָס)) (IP-SUB (VBF באַדאַרף) (NP-SBJ (PRO זי)) (VB זיצן) (ADVP (ADV אַלײן)))))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.4000000000000001,
+      "unlabeled_f1": 1.0,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 2,
+        "unlabeled_match": 5,
+        "gold_count": 5,
+        "pred_count": 5
+      }
+    },
+    {
+      "id": "test.txt:790",
+      "sentence": "\" עס \" איז דער סוביעקט , רעגנט דער פּרעדיקאַט .",
+      "gold_tree": "(TOP (IP-MAT (IP-MAT-1 (NP-SBJ (PUNC \") (META (ES עס))) (PUNC \") (VBF איז) (NP-PRD (D דער) (N סוביעקט))) (PUNC ,) (CONJP (IP-MAT=1 (NP-SBJ (META (VBF רעגנט))) (NP-PRD (D דער) (N פּרעדיקאַט)))) (PUNC .)))",
+      "predicted_tree": "(TOP (IP-MAT (IP-MAT (NP-SBJ (PUNC \") (PRO עס) (PUNC \")) (BEP איז) (NP-PRD (D דער) (N סוביעקט))) (PUNC ,) (IP-MAT (NP-SBJ (VBF רעגנט)) (NP-PRD (D דער) (N פּרעדיקאַט))) (PUNC .)))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.7058823529411764,
+      "unlabeled_f1": 0.7058823529411764,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 6,
+        "unlabeled_match": 6,
+        "gold_count": 10,
+        "pred_count": 7
+      }
+    },
+    {
+      "id": "test.txt:65",
+      "sentence": "פֿאַר אים איז דער סמירנער מקובל טאַקע דער ייִדישער מלך",
+      "gold_tree": "(TOP (IP-MAT (PP (P פֿאַר) (NP (PRO אים))) (VBF איז) (NP-SBJ (D דער) (ADJ סמירנער) (N מקובל)) (ADVP (ADV טאַקע)) (NP-PRD (D דער) (ADJ ייִדישער) (N מלך))))",
+      "predicted_tree": "(TOP (IP-MAT (PP (P פֿאַר) (NP (PRO אים))) (BEP איז) (NP-SBJ (D דער) (ADJ סמירנער) (N מקובל)) (ADVP (ADV טאַקע)) (NP-PRD (D דער) (ADJ ייִדישער) (N מלך))))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 1.0,
+      "unlabeled_f1": 1.0,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 6,
+        "unlabeled_match": 6,
+        "gold_count": 6,
+        "pred_count": 6
+      }
+    },
+    {
+      "id": "test.txt:264",
+      "sentence": "אונ' האַבן אין גיהרגט",
+      "gold_tree": "(TOP (IP-MAT (CONJ אונ') (HVF האַבן) (NP-ACC (PRO אין)) (VBN גיהרגט)))",
+      "predicted_tree": "(TOP (IP-MAT (CONJ אונ') (HVF האַבן) (NP-ACC (PRO אין)) (VBN גיהרגט)))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 1.0,
+      "unlabeled_f1": 1.0,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 2,
+        "unlabeled_match": 2,
+        "gold_count": 2,
+        "pred_count": 2
+      }
+    },
+    {
+      "id": "test.txt:121",
+      "sentence": "די ערד װר אַלי דינגן די מכט ער אײטל לײז דרום דז די ערד איז עיִקור",
+      "gold_tree": "(TOP (IP-MAT (NP-LFD (D די) (N ערד) (PP (P װר) (NP (Q אַלי) (N דינגן)))) (NP-RSP-1 (D די)) (VBF מכט) (NP-SBJ (PRO ער)) (IP-SMC (NP-PRD (ADJ אײטל) (N לײז))) (PP (DR+P דרום) (CP-THT (C דז) (IP-SUB (NP-SBJ (D די) (N ערד)) (VBF איז) (ADJP-PRD (ADJ עיִקור)))))))",
+      "predicted_tree": "(TOP (IP-MAT (NP-SBJ (D די) (N ערד)) (BED װר) (NP-PRD (NP (Q אַלי) (NS דינגן)) (CP-REL (WNP-1 (WPRO די)) (IP-SUB (VBP מכט) (NP-SBJ (PRO ער)) (NP-OB1 *T*-1) (ADJP (ADV אײטל) (ADJ לײז))))) (ADVP (ADV דרום) (CP-ADV (C דז) (IP-SUB (NP-SBJ (D די) (N ערד)) (BEP איז) (NP-PRD (N עיִקור)))))))",
+      "valid_syntax": true,
+      "tokens_match": false,
+      "labeled_f1": 0.14814814814814817,
+      "unlabeled_f1": 0.22222222222222224,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 2,
+        "unlabeled_match": 3,
+        "gold_count": 13,
+        "pred_count": 14
+      }
+    },
+    {
+      "id": "test.txt:513",
+      "sentence": "אפֿשר װאָלטן זיך די קינדער עפּעס op@ @gelernt .",
+      "gold_tree": "(TOP (IP-MAT (ADVP (ADV אפֿשר)) (VLF װאָלטן) (NP-RFL (PRO זיך)) (NP-SBJ (D די) (N קינדער)) (NP-ACC (Q עפּעס)) (RP op@) (VBN @gelernt) (PUNC .)))",
+      "predicted_tree": "(TOP (IP-MAT (ADVP (ADV אפֿשר)) (MDD װאָלטן) (NP-OB1 (PRO זיך)) (NP-SBJ (D די) (N קינדער)) (VP (NP-OB1 (PRO עפּעס)) (RP op@) (VBN @gelernt)) (PUNC .)))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.5454545454545454,
+      "unlabeled_f1": 0.9090909090909091,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 3,
+        "unlabeled_match": 5,
+        "gold_count": 5,
+        "pred_count": 6
+      }
+    },
+    {
+      "id": "test.txt:787",
+      "sentence": "דר_װײל דז איך האַב גיזעהן פֿר מיר מנהגים די מיר ניט גיפֿלן האַבן",
+      "gold_tree": "(TOP (CP-ADV (ADV דר_װײל) (C דז) (IP-SUB (NP-SBJ (PRO איך)) (HVF האַב) (VBN גיזעהן) (PP (P פֿר) (NP (PRO מיר))) (NP-ACC (N מנהגים) (CP-REL (WNP-1 (WPRO די)) (IP-SUB (NP-DTV (PRO מיר)) (NEG ניט) (VBN גיפֿלן) (HVF האַבן)))))))",
+      "predicted_tree": "(TOP (CP-ADV (ADVP-TMP (ADV דר_װײל)) (C דז) (IP-SUB (NP-SBJ (PRO איך)) (HVP האַב) (VP (VBN גיזעהן) (PP (P פֿר) (NP (PRO מיר))) (NP-ACC (N מנהגים) (CP-REL (WNP-1 (WPRO די)) (IP-SUB (NP-SBJ *T*-1) (NP-DAT (PRO מיר)) (NEG ניט) (VP (VBN גיפֿלן)) (HVP האַבן))))))))",
+      "valid_syntax": true,
+      "tokens_match": false,
+      "labeled_f1": 0.34782608695652173,
+      "unlabeled_f1": 0.34782608695652173,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 4,
+        "unlabeled_match": 4,
+        "gold_count": 10,
+        "pred_count": 13
+      }
+    },
+    {
+      "id": "test.txt:466",
+      "sentence": "און לײג זיך מיר װײַטער אױף דער װעראַנדע .",
+      "gold_tree": "(TOP (IP-MAT (CONJ און) (VBF לײג) (NP-RFL (PRO זיך)) (NP-DTV (PRO מיר)) (ADVP (ADV װײַטער)) (PP (P אױף) (NP (D דער) (N װעראַנדע))) (PUNC .)))",
+      "predicted_tree": "(TOP (IP-IMP (CONJ און) (VBI לײג) (NP-ACC (PRO זיך)) (NP-DAT (PRO מיר)) (ADVP (ADV װײַטער)) (PP (P אױף) (NP (D דער) (N װעראַנדע))) (PUNC .)))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.5,
+      "unlabeled_f1": 1.0,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 3,
+        "unlabeled_match": 6,
+        "gold_count": 6,
+        "pred_count": 6
+      }
+    },
+    {
+      "id": "test.txt:489",
+      "sentence": "אױך zals@ @tu אױס שפּרעכין איסור רהטר אין דער גמראַ מסכטט קרטין מיט זעקס_ונ_דרײסיג בלעטיר",
+      "gold_tree": "(TOP (IP-MAT (ADVP (ADV אױך)) (MDF zals@) (NP-SBJ (PRO @tu)) (RP אױס) (VB שפּרעכין) (NP-ACC (H איסור) (H רהטר)) (PP (P אין) (D דער) (N גמראַ)) (XX (H מסכטט) (NP (N קרטין) (PP (P מיט) (NP (NUM זעקס_ונ_דרײסיג) (N בלעטיר)))))))",
+      "predicted_tree": "(TOP (IP-MAT (ADVP (ADV אױך)) (MD zals@) (NP-SBJ (PRO @tu)) (RP אױס) (VB שפּרעכין) (NP-OB1 (N איסור) (N רהטר)) (PP (P אין) (NP (D דער) (NPR גמראַ) (N מסכטט) (NPR קרטין))) (PP (P מיט) (NP (NUM זעקס_ונ_דרײסיג) (N בלעטיר)))))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.5882352941176471,
+      "unlabeled_f1": 0.7058823529411765,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 5,
+        "unlabeled_match": 6,
+        "gold_count": 9,
+        "pred_count": 8
+      }
+    },
+    {
+      "id": "test.txt:673",
+      "sentence": "װאָס טוט איר דאָ אײגענטלעך אױף דעם יריד ? \"",
+      "gold_tree": "(TOP (CP-QUE-MAT-SPE (WNP-1 (WPRO װאָס)) (IP-SUB-SPE (VBF טוט) (NP-SBJ (PRO איר)) (ADVP (ADV דאָ)) (ADVP (ADV אײגענטלעך)) (PP (P אױף) (NP (D דעם) (N יריד)))) (PUNC ?) (PUNC \")))",
+      "predicted_tree": "(TOP (CP-QUE (WNP-OB1 (WPRO װאָס)) (IP-SUB (VBF טוט) (NP-SBJ (PRO איר)) (ADVP (ADV דאָ)) (ADVP (ADV אײגענטלעך)) (PP (P אױף) (NP (D דעם) (N יריד)))) (PUNC ?) (PUNC \")))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.625,
+      "unlabeled_f1": 1.0,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 5,
+        "unlabeled_match": 8,
+        "gold_count": 8,
+        "pred_count": 8
+      }
+    },
+    {
+      "id": "test.txt:394",
+      "sentence": "\" גױיִשע קאָפּ ! אישאָ אַ װאַ...",
+      "gold_tree": "(TOP (QTP (PUNC \") (NP-VOC (ADJ גױיִשע) (N קאָפּ)) (PUNC !) (H אישאָ) (NP (D אַ) (N װאַ...))))",
+      "predicted_tree": "(TOP (FRAG (PUNC \") (NP-VOC (ADJ גױיִשע) (N קאָפּ)) (PUNC !) (INTJ אישאָ) (NP (D אַ) (N װאַ...))))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.6666666666666666,
+      "unlabeled_f1": 1.0,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 2,
+        "unlabeled_match": 3,
+        "gold_count": 3,
+        "pred_count": 3
+      }
+    },
+    {
+      "id": "test.txt:815",
+      "sentence": "אײנער אַ ייִד האָט אַמאָל געטאָן אַ שידוך מיט זײַנעם אַ זון מיט עפּעס אַ ניט קײן בעקאָװעדן מחותּן .",
+      "gold_tree": "(TOP (IP-MAT (NP-SBJ (D אײנער) (D אַ) (N ייִד)) (HVF האָט) (ADVP-TMP (ADV אַמאָל)) (VBN געטאָן) (NP-ACC (D אַ) (N שידוך) ) (PP (P מיט) (NP (PRO$ זײַנעם) (D אַ) (N זון))) (PP-1 (P מיט) (NP (Q עפּעס) (D אַ) (ADJP (NEG ניט) (Q קײן) (ADJ בעקאָװעדן)) (N מחותּן))) (PUNC .)))",
+      "predicted_tree": "(TOP (IP-MAT (NP-SBJ (D אײנער) (D אַ) (N ייִד)) (HVF האָט) (ADVP-TMP (ADV אַמאָל)) (VBN געטאָן) (NP-ACC (D אַ) (N שידוך)) (PP (P מיט) (NP (D זײַנעם) (D אַ) (N זון))) (PP (P מיט) (NP (D עפּעס) (D אַ) (NEG ניט) (D קײן) (ADJ בעקאָװעדן) (N מחותּן))) (PUNC .)))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.9411764705882353,
+      "unlabeled_f1": 0.9411764705882353,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 8,
+        "unlabeled_match": 8,
+        "gold_count": 9,
+        "pred_count": 8
+      }
+    },
+    {
+      "id": "test.txt:215",
+      "sentence": "צינע : נו ?",
+      "gold_tree": "(TOP (FRAG (META (NPR צינע) (PUNC :)) (INTJ נו) (PUNC ?)))",
+      "predicted_tree": "(TOP (FRAG (NP (NPR צינע)) (PUNC :) (INTJP (INTJ נו)) (PUNC ?)))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.4,
+      "unlabeled_f1": 0.4,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 1,
+        "unlabeled_match": 1,
+        "gold_count": 2,
+        "pred_count": 3
+      }
+    },
+    {
+      "id": "test.txt:97",
+      "sentence": "\" און װײַטער איז דאָ נאָך אַ קלײנער כעסאָרנדל :",
+      "gold_tree": "(TOP (IP-MAT-SPE (PUNC \") (CONJ און) (ADVP (ADV װײַטער)) (VBF איז) (ADVP (ADV דאָ)) (NP-SBJ (ADV נאָך) (D אַ) (ADJ קלײנער) (N כעסאָרנדל)) (PUNC :)))",
+      "predicted_tree": "(TOP (IP-MAT (PUNC \") (CONJ און) (ADVP (ADV װײַטער)) (BEP איז) (ADVP (ADV דאָ)) (NP-SBJ (ADV נאָך) (D אַ) (ADJ קלײנער) (N כעסאָרנדל)) (PUNC :)))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.75,
+      "unlabeled_f1": 1.0,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 3,
+        "unlabeled_match": 4,
+        "gold_count": 4,
+        "pred_count": 4
+      }
+    },
+    {
+      "id": "test.txt:505",
+      "sentence": "סטערע װײנט אין דער שטיל .",
+      "gold_tree": "(TOP (META (NPR סטערע) (VBF װײנט) (P אין) (D דער) (N שטיל) (PUNC .)))",
+      "predicted_tree": "(TOP (IP-MAT (NP-SBJ (NPR סטערע)) (VBF װײנט) (PP (P אין) (NP (D דער) (N שטיל))) (PUNC .)))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.0,
+      "unlabeled_f1": 0.4,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 0,
+        "unlabeled_match": 1,
+        "gold_count": 1,
+        "pred_count": 4
+      }
+    },
+    {
+      "id": "test.txt:30",
+      "sentence": "און מע רעדט תּורה ,",
+      "gold_tree": "(TOP (IP-MAT (CONJ און) (NP-SBJ (PRO מע)) (VBF רעדט) (NP-ACC (NPR תּורה)) (PUNC ,)))",
+      "predicted_tree": "(TOP (IP-MAT (CONJ און) (NP-SBJ (PRO מע)) (VBF רעדט) (NP-ACC (N תּורה)) (PUNC ,)))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 1.0,
+      "unlabeled_f1": 1.0,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 3,
+        "unlabeled_match": 3,
+        "gold_count": 3,
+        "pred_count": 3
+      }
+    },
+    {
+      "id": "test.txt:405",
+      "sentence": "האַט ער איר גיִענפֿרט יו איך קען דיך",
+      "gold_tree": "(TOP (IP-MAT (HVF האַט) (NP-SBJ (PRO ער)) (NP-DTV (PRO איר)) (VBN גיִענפֿרט) (IP-MAT-SPE (INTJ יו) (NP-SBJ (PRO איך)) (VBF קען) (NP-ACC (PRO דיך)))))",
+      "predicted_tree": "(TOP (IP-MAT (HVF האַט) (NP-SBJ (PRO ער)) (NP-OB2 (PRO איר)) (VBN גיִענפֿרט) (IP-MAT-SPE (INTJ יו) (NP-SBJ (PRO איך)) (VBF קען) (NP-OB1 (PRO דיך)))))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.6666666666666666,
+      "unlabeled_f1": 1.0,
+      "error": null,
+      "model": "gemini-3.5-flash",
+      "counts": {
+        "labeled_match": 4,
+        "unlabeled_match": 6,
+        "gold_count": 6,
+        "pred_count": 6
+      }
+    },
+    {
+      "id": "test.txt:449",
+      "sentence": "און דער גלח זאָל oys@ @fregn דעם ייִדן .",
+      "gold_tree": "(TOP (IP-MAT (CONJ און) (NP-SBJ (D דער) (N גלח)) (MDF זאָל) (RP oys@) (VB @fregn) (NP-ACC (D דעם) (N ייִדן)) (PUNC .)))",
+      "predicted_tree": null,
+      "valid_syntax": false,
+      "tokens_match": false,
+      "labeled_f1": 0.0,
+      "unlabeled_f1": 0.0,
+      "error": "daily quota exhausted: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.5-flash\\nPlease retry in 4.278768737s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://ai.google.dev/gemini-api/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'model': 'gemini-3.5-flash', 'location': 'global'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '4s'}]}}",
+      "model": "gemini-3.5-flash",
+      "counts": null
+    }
+  ]
+}
