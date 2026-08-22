@@ -390,6 +390,9 @@ def main():
     ap.add_argument("--sleep", type=float, default=13.0,
                     help="Seconds between requests (13s stays under the 5 req/min free tier).")
     ap.add_argument("--out", default="llm_baseline_results.json", help="Where to write results.")
+    ap.add_argument("--list-models", action="store_true",
+                    help="Print the model ids this key can call, then exit. "
+                         "Cheaper than guessing an id and eating a failed request.")
     ap.add_argument("--resume", metavar="RESULTS_JSON", default=None,
                     help="Re-query ONLY the sentences that failed in a previous "
                          "run, keeping its successful answers. With a daily cap, "
@@ -399,6 +402,22 @@ def main():
                          "calling the API. Use after a metric fix, or to re-read an "
                          "older run. Writes back in place unless --out is given.")
     args = ap.parse_args()
+
+    if args.list_models:
+        client = make_client()
+        print("Models your key can call for text generation:\n")
+        rows = []
+        for m in client.models.list():
+            actions = getattr(m, "supported_actions", None) or []
+            if actions and "generateContent" not in actions:
+                continue
+            name = getattr(m, "name", "").replace("models/", "")
+            rows.append((name, getattr(m, "display_name", "") or ""))
+        for name, display in sorted(rows):
+            print(f"  {name:<44} {display}")
+        print("\nPass one as --model, and check its RPD in the API dashboard: the "
+              "Flash tiers are typically 20/day, the Lite tiers 500/day.")
+        return
 
     if args.recompute:
         with open(args.recompute, encoding="utf-8") as handle:
@@ -466,6 +485,12 @@ def main():
         for record in prior["results"]:
             if not record.get("error"):
                 previous[record["id"]] = record
+        prior_models = {r.get("model") for r in previous.values() if r.get("model")}
+        if prior_models and prior_models != {args.model}:
+            print(f"  WARNING: kept answers came from {sorted(prior_models)} but "
+                  f"--model is {args.model}.")
+            print("  Scores averaged across models are uninterpretable. Use a "
+                  "separate --out per model.")
         pending = [i for i in items if i["id"] not in previous]
         print(f"Resuming from {args.resume}: {len(previous)} answers kept, "
               f"{len(pending)} to re-query.")
@@ -508,6 +533,7 @@ def main():
                   "gold_tree": item["gold_tree"], "predicted_tree": raw,
                   "valid_syntax": False, "tokens_match": False,
                   "labeled_f1": 0.0, "unlabeled_f1": 0.0, "error": error,
+                  "model": args.model,
                   # kept so --recompute can rebuild the summary without re-querying
                   "counts": None}
 
