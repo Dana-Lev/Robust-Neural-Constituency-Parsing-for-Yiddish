@@ -490,6 +490,25 @@ plainly which number came from which model.
 **One condition per file.** Never mix models in a single `--out` — averaged
 across models the scores mean nothing. `--resume` warns if you try.
 
+### When a run misbehaves
+
+Three failures look similar and need opposite responses; the script now
+distinguishes them from the error text:
+
+| Symptom | Meaning | What happens |
+|---|---|---|
+| `429` naming a *per-minute* quota | you are going too fast | waits `--sleep`-scale intervals and retries |
+| `429` naming a *per-day* quota | today's budget is gone | aborts at once, so retries do not burn the rest; resume tomorrow |
+| `503 UNAVAILABLE`, `500`, "high demand" | the provider is busy, nothing to do with you | retries with exponential backoff up to ~12 min per sentence |
+| `400`/`404` (bad key, unknown model id) | will fail identically forever | fails fast, no retries |
+
+A `503` wave means the model is overloaded, not that you are out of quota. Wait
+and rerun, or switch to another Flash tier — each model has its own daily budget,
+so `gemini-3.5-flash` is untouched by work done on `gemini-3.7-flash`.
+
+Runs also save on interrupt: Ctrl-C writes everything gathered so far, and
+`--resume <file>` continues from there. A long run is never lost.
+
 If a run stops early on the daily cap, top up the gaps the next day instead of
 repeating it:
 

@@ -275,14 +275,37 @@ def is_per_day_quota(message):
                for marker in _PER_DAY_MARKERS)
 
 
+# Server-side conditions that clear on their own -- worth waiting out.
+_TRANSIENT_MARKERS = ("503", "502", "500", "504", "unavailable", "internal",
+                      "deadline_exceeded", "high demand", "try again later",
+                      "overloaded")
+
+
+def is_transient(message):
+    flat = message.lower()
+    return any(marker in flat for marker in _TRANSIENT_MARKERS)
+
+
+def classify(message):
+    """quota_day | quota_minute | transient | fatal"""
+    if "429" in message or "RESOURCE_EXHAUSTED" in message:
+        return "quota_day" if is_per_day_quota(message) else "quota_minute"
+    if is_transient(message):
+        return "transient"
+    return "fatal"
+
+
 def predict_tree(client, model, prompt, max_attempts=8, backoff=20):
     """
-    Call the API, retrying only on limits that retrying can actually clear.
+    Call the API, retrying only what retrying can actually fix.
 
-    A per-minute limit is worth waiting out. A per-day limit is not: each retry
-    spends another request against the same exhausted cap, so eight retries per
-    sentence burn 8x the quota and still fail. Distinguishing the two is what
-    keeps a 30-sentence run from costing 86 requests.
+    Three failure classes need three responses. A per-minute limit is worth
+    waiting out at a fixed interval. A per-day limit is not -- each retry spends
+    another request against the same exhausted cap, so retrying multiplies the
+    damage and still fails. A 5xx/UNAVAILABLE ("high demand") is the provider's
+    own load, unrelated to quota, and clears on its own: it deserves the most
+    patience, with exponential backoff. Anything else (bad key, bad model id,
+    malformed request) will fail identically forever, so it fails fast.
     """
     from google.genai import types
 
@@ -297,16 +320,29 @@ def predict_tree(client, model, prompt, max_attempts=8, backoff=20):
             return (response.text or "").strip(), None
         except Exception as exc:  # noqa: BLE001 - inspected, then re-raised or reported
             last = str(exc)
-            if "429" in last or "RESOURCE_EXHAUSTED" in last:
-                if is_per_day_quota(last):
-                    raise DailyQuotaExhausted(last)
-                print(f"  per-minute limit hit (attempt {attempt}/{max_attempts}); "
-                      f"sleeping {backoff}s ...")
+            kind = classify(last)
+
+            if kind == "quota_day":
+                raise DailyQuotaExhausted(last)
+
+            if kind == "quota_minute":
+                print(f"  per-minute limit (attempt {attempt}/{max_attempts}); "
+                      f"waiting {backoff}s ...")
                 time.sleep(backoff)
                 continue
-            return None, last
-    # Exhausted retries on a 429 that never named its scope: most likely a daily
-    # cap, so stop rather than spending the same quota on every later sentence.
+
+            if kind == "transient":
+                # Exponential backoff, capped: the model is busy, not exhausted.
+                wait = min(backoff * (2 ** (attempt - 1)), 120)
+                print(f"  server busy / unavailable (attempt {attempt}/{max_attempts}); "
+                      f"waiting {wait}s ...")
+                time.sleep(wait)
+                continue
+
+            return None, last  # fatal: no amount of retrying helps
+
+    if classify(last) == "transient":
+        return None, f"still unavailable after {max_attempts} attempts: {last}"
     raise DailyQuotaExhausted(
         f"{max_attempts} consecutive rate-limit failures; last message: {last}")
 
@@ -507,6 +543,40 @@ def main():
 
     results = []
 
+    def save(records, note=""):
+        """Write whatever we have. A 100-sentence run is too expensive to lose."""
+        merged = records
+        if previous:
+            by_id = {r["id"]: r for r in records}
+            by_id.update(previous)
+            merged = [by_id[i["id"]] for i in all_items if i["id"] in by_id]
+        summary = summarize(merged, model=args.model, shots=args.shots,
+                            source=source, seed=args.seed)
+        with open(args.out, "w", encoding="utf-8") as handle:
+            json.dump({"summary": summary, "results": merged}, handle,
+                      ensure_ascii=False, indent=2)
+        if note:
+            print(note)
+        return summary, merged
+
+    aborted = None
+    try:
+        results = run_queries(items, results, client, args, exemplars)
+    except KeyboardInterrupt:
+        summary, results = save(
+            results,
+            f"\n  Interrupted. {len(results)} sentence(s) saved to {args.out}.\n"
+            f"  Continue later with:  --resume {args.out}")
+        print_summary(summary)
+        return
+
+    summary, results = save(results)
+    print_summary(summary)
+    print(f"\nSaved detailed results to {args.out}")
+    return
+
+
+def run_queries(items, results, client, args, exemplars):
     aborted = None
     for index, item in enumerate(items, 1):
         if aborted:
@@ -566,19 +636,7 @@ def main():
         if index < len(items):
             time.sleep(args.sleep)
 
-    if previous:
-        # order by the original sample so the file stays comparable run to run
-        merged = {r["id"]: r for r in results}
-        merged.update({k: v for k, v in previous.items()})
-        results = [merged[i["id"]] for i in all_items if i["id"] in merged]
-
-    summary = summarize(results, model=args.model, shots=args.shots,
-                        source=source, seed=args.seed)
-    print_summary(summary)
-
-    with open(args.out, "w", encoding="utf-8") as handle:
-        json.dump({"summary": summary, "results": results}, handle, ensure_ascii=False, indent=2)
-    print(f"\nSaved detailed results to {args.out}")
+    return results
 
 
 if __name__ == "__main__":
