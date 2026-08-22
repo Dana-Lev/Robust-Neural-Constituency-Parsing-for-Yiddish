@@ -346,17 +346,19 @@ given a small amount of capacity to compensate for fragmentation itself. We inje
 adapters into the frozen backbone in two families.
 
 \textbf{LoRA} \citep{hu-etal-2022-lora} on the self-attention query and value
-projections ($r{=}16$, $\alpha{=}32$, dropout $0.1$), adding roughly $1.2$M
-trainable parameters. We deliberately exclude the \texttt{dense} sublayers from
+projections ($r{=}16$, $\alpha{=}32$, dropout $0.1$). This gives $24$ injection
+sites over the $12$ layers and adds $589{,}824$ trainable parameters, $4.7\%$ of
+the trainable budget and $0.2\%$ of the frozen backbone. We deliberately exclude the \texttt{dense} sublayers from
 the target list: in XLM-R that name matches three structurally different
 sublayers, making the configuration ambiguous.
 
 \textbf{Pfeiffer bottleneck adapters} \citep{pfeiffer-etal-2020-mad}, that is
 $h + W_{\text{up}}(\mathrm{GELU}(W_{\text{down}}(h)))$ after each layer's output
 LayerNorm, with reduction factor $16$ ($768 \rightarrow 48 \rightarrow 768$) and
-$W_{\text{up}}$ initialised to zero. The zero initialisation matters: at step $0$
-the adapted model \emph{is} the frozen baseline, so the adapters cannot damage the
-starting point and any change is something they learned.
+$W_{\text{up}}$ initialised to zero, adding $894{,}528$ parameters. The zero
+initialisation matters: at step $0$ the adapted model \emph{is} the frozen
+baseline, so the adapters cannot damage the starting point and any change is
+something they learned.
 
 \paragraph{The adapter learning rate.} SuPar assigns \texttt{args.lr} to every
 parameter whose name begins with \texttt{encoder}, and adapters live under
@@ -421,6 +423,16 @@ for the TITAN Xp's compute capability, which caused a job to report a working GP
 and then fail at its first kernel launch --- so our training entrypoint now
 launches a probe kernel and refuses to start if it fails.
 
+\paragraph{Verifying that each intervention is active.} Both interventions can
+fail silently, so each run asserts its own configuration in the log. The adapter
+cells report the injection sites and parameter count and confirm that adapter
+parameters received \texttt{--adapter-lr} rather than the encoder rate; the
+subword-regularization cells report that the training loader was replaced and
+print the fertility they are actually training with ($2.04 \rightarrow 2.55$
+pieces per word, $31.7\%$ of words varying). A cell whose log shows zero adapter
+parameters, or no collator replacement, would be a baseline reported under
+another name.
+
 \paragraph{Reproducibility notes.} SuPar 1.1.4 predates the current PyTorch
 line, and three incompatibilities had to be handled rather than worked around.
 \texttt{torch.load} now defaults to \texttt{weights\_only=True} and refuses
@@ -460,9 +472,9 @@ explicitly rather than implying more.}
 Frozen baseline              & 11.86M & 85.24 & 74.89 & 43.93 & 31.43 \\
 \midrule
 + Subword reg.\ (maxmatch)   & 11.86M & \todo{} & \todo{} & \todo{} & \todo{} \\
-+ Adapters (LoRA)            & \todo{} & \todo{} & \todo{} & \todo{} & \todo{} \\
-+ Adapters (bottleneck)      & \todo{} & \todo{} & \todo{} & \todo{} & \todo{} \\
-+ Both (maxmatch + LoRA)     & \todo{} & \todo{} & \todo{} & \todo{} & \todo{} \\
++ Adapters (LoRA)            & 12.45M & \todo{} & \todo{} & \todo{} & \todo{} \\
++ Adapters (bottleneck)      & 12.76M & \todo{} & \todo{} & \todo{} & \todo{} \\
++ Both (maxmatch + LoRA)     & 12.45M & \todo{} & \todo{} & \todo{} & \todo{} \\
 \bottomrule
 \end{tabular}
 \caption{Constituency parsing on the PPCHY test set (\%). UF/LF = unlabeled /
@@ -643,7 +655,8 @@ structure is resilient to subword fragmentation: two independent dynamic
 interventions failed to move a frozen encoder's parsing F1, which suggests the
 encoder already extracts enough structural signal from fragmented pieces and that
 orthographic repair is not what this task lacks. Emphasise the cost side --
-whatever the outcome, it was obtained for 1--2M trainable parameters and no
+whatever the outcome, the adapter cells obtained it for well under a million
+adapter parameters -- 0.59M for LoRA, 0.89M for the bottleneck -- and no
 pre-training run.
 (2) If something does help, quantify it and say which failure mode it addresses;
 relate it to the fertility statistics in Table~\ref{tab:fertility}, since those
