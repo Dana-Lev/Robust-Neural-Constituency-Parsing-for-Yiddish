@@ -26,6 +26,7 @@
 \usepackage{booktabs}
 \usepackage{amsmath}
 \usepackage{xcolor}
+\usepackage{enumitem}   % itemsep/topsep options on lists
 
 \newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
 % NOTE on Yiddish examples: pdflatex + the ACL template do not handle
@@ -47,73 +48,162 @@
 \maketitle
 
 \begin{abstract}
-% 4-8 sentences: problem, gap, your two approaches, the LLM control
-% experiment, headline numbers, main conclusion.
-\todo{Write last, after all results are in. Suggested skeleton:
-(1) Yiddish suffers subword fragmentation in multilingual encoders, which prior
-work attacked with vocabulary injection and continued pre-training;
-(2) we test two \emph{dynamic, parameter-efficient} alternatives -- subword
-regularization and MAD-X-style language adapters -- that modify no vocabulary
-and need no pre-training; (3) we additionally test whether frontier LLMs
-already solve PPCHY parsing zero-/few-shot; (4) headline Labeled F1 numbers;
-(5) the takeaway about what frozen encoders actually need.}
+Multilingual encoders fragment Yiddish aggressively, and \citet{kulick-etal-2022-part}
+identified this ``tokenization tax'' as an obstacle to building the syntactic
+tools the language lacks. A prior course project attacked it \emph{statically},
+injecting clean vocabulary and running continued pre-training, and found that
+although the injected tokens became active, constituency parsing did not improve.
+We ask whether the same bottleneck yields to \emph{dynamic} and
+parameter-efficient adaptation instead: stochastic subword re-segmentation during
+training, and MAD-X-style language adapters over a fully frozen encoder, neither
+of which modifies the vocabulary or requires pre-training. Training only
+$3.3$M of $281.3$M parameters ($1.17\%$), we compare both against a frozen-encoder
+baseline on the Penn Parsed Corpus of Historical Yiddish. \todo{One sentence with
+the headline parser result once the grid finishes.} We additionally test whether
+the problem is already solved by general-purpose models: across two model tiers
+and matched zero-/few-shot conditions, the best frontier configuration reaches
+$54.2$ labeled F1, roughly thirty points below a trained parser, and we show that
+most of the apparent benefit of in-context examples is improved
+instruction-following rather than improved parsing.
 \end{abstract}
 
 % =====================================================================
 \section{Introduction}
-% Rubric: research question (10pt) is judged largely from here.
-% Set up: (a) the problem, (b) high-level idea, (c) main findings,
-% (d) explicit contribution list. Refer forward to the results figure.
-\todo{Introduction. Cover, in order:
-(1) Yiddish as a low-resource, orthographically unstable language; the gap
-identified by \citet{kulick-etal-2022-part} -- a POS tagger exists, a parser
-was missing.
-(2) The previous course project \citep{halfon-boiman-2026-yiddish} built the
-first neural constituency parser for Yiddish and found that \emph{static}
-vocabulary injection (FOCUS) + continued pre-training (DAPT) activates new
-tokens but does not improve parsing F1.
-(3) Our research question: can the subword-fragmentation bottleneck be
-addressed \emph{dynamically} and parameter-efficiently -- BPE-dropout-style
-subword regularization \citep{provilkov-etal-2020-bpe} and language adapters
-\citep{pfeiffer-etal-2020-mad} -- without touching the vocabulary or
-pre-training? And, as a control demanded by the pace of the field: do frontier
-LLMs already parse historical Yiddish, making a custom parser unnecessary?
-(4) Contributions bullet list.}
 
-% =====================================================================
+Yiddish is a low-resource language with a thousand years of orthographic
+instability behind it. Its computational treatment took a decisive step with
+\citet{kulick-etal-2022-part}, who built the first robust part-of-speech tagger
+for the language and showed that embeddings trained on the noisy, OCR-derived
+Yiddish Book Center corpus implicitly absorb historical spelling variation,
+removing the need for manual standardisation. That work also named what it could
+not do: a syntactic parser, whose ``greater complexity'' makes the demand for
+gold-standard data and careful modelling ``correspondingly more pressing''.
+
+One obstacle it identified is mundane but consequential. Multilingual subword
+vocabularies were not built for Hebrew-script Yiddish, so words shatter into many
+pieces --- in our data, an average of $2.05$ pieces per word under XLM-R
+\citep{conneau-etal-2020-unsupervised}. A previous course project
+\citep{halfon-boiman-2026-yiddish} attacked this bottleneck \emph{statically}: it
+extracted clean vocabulary from the Jochre corpus \citep{urieli-2025-jochre},
+injected it with FOCUS \citep{dobler-de-melo-2023-focus}, and aligned the new
+embeddings by continued pre-training. The intervention worked on its own terms ---
+injected-token usage rose from $0\%$ to $43.7\%$ --- yet downstream parsing did
+not improve, moving labeled F1 from $83.81$ to $83.02$.
+
+That null result invites a sharper question, and it is the one this paper asks.
+Static vocabulary surgery is expensive: it rewrites the embedding matrix and
+requires a pre-training run. Are there \emph{dynamic} interventions that address
+fragmentation at a fraction of the cost, and do they fare any better? We evaluate
+two, chosen because neither touches the physical vocabulary and neither needs
+pre-training:
+
+\begin{enumerate}[itemsep=2pt,topsep=2pt]
+\item \textbf{Subword regularization.} Rather than fixing a better segmentation,
+we make the model robust to segmentation noise by resampling it during training,
+in the spirit of BPE-Dropout \citep{provilkov-etal-2020-bpe} and Kudo's subword
+regularization \citep{kudo-2018-subword}.
+\item \textbf{Language adapters.} Rather than editing embeddings, we insert small
+trainable modules into a fully frozen encoder, following MAD-X
+\citep{pfeiffer-etal-2020-mad}, using LoRA \citep{hu-etal-2022-lora} and Pfeiffer
+bottleneck adapters.
+\end{enumerate}
+
+A project begun in 2026 from a problem statement written in 2022 also owes an
+answer to an obvious objection: perhaps a general-purpose model already parses
+historical Yiddish, and a dedicated parser is beside the point. We test this
+directly rather than assuming either answer, prompting two tiers of a current
+frontier model family under matched zero-shot and few-shot conditions.
+
+Our contributions are:
+
+\begin{itemize}[itemsep=2pt,topsep=2pt]
+\item Two parameter-efficient treatments of subword fragmentation for
+constituency parsing, implemented as runtime patches over SuPar
+\citep{zhang-etal-2020-fast} that leave the library and the original pipeline
+untouched, training $1.17\%$ of the model's parameters. \todo{State the outcome
+in one clause once the grid finishes.}
+\item A frontier-LLM control on the same test data and the same metric, showing a
+gap of roughly thirty labeled F1 to a trained parser --- so the parsing problem is
+not dissolved by scale.
+\item A measurement result with wider relevance: on this task, in-context
+examples improve \emph{token fidelity} far more than parse quality, and an
+evaluation that reports only F1 cannot tell a model that cannot parse from one
+that ignored the output contract.
+\end{itemize}
+
 \section{Background and Related Work}
-% Rubric: literature review is 20pt. Critically evaluate, identify the gap.
+
 \subsection{Yiddish NLP and the PPCHY}
-\todo{Summarize \citet{kulick-etal-2022-part}: YBC corpus, PPCHY treebank,
-their finding that embeddings absorb spelling variation, and their explicit
-call for a parser. Describe PPCHY annotation style (IP-MAT, function tags like
-NP-SBJ) briefly -- the reader must understand what ``Labeled F1'' is over.}
+
+\citet{kulick-etal-2022-part} established the modern baseline for Yiddish
+computational work. Their tagger was trained on the Penn Parsed Corpus of
+Historical Yiddish (PPCHY), a member of the ``Penn family'' of historical
+treebanks that shares its annotation philosophy with the Penn Treebank and the
+Icelandic Parsed Historical Corpus. PPCHY provides roughly $200$K words of
+gold-standard trees spanning the fifteenth to twentieth centuries, annotated with
+part-of-speech tags and phrase structure.
+
+Two properties of the annotation matter for what follows. First, labels encode
+\emph{function} as well as category: a subject noun phrase is \textsc{np-sbj}, a
+matrix clause \textsc{ip-mat}, an accusative object \textsc{np-acc}. This is a
+richer target than a category-only scheme, and it is what makes labeled F1 a
+demanding metric here --- our splits contain $226$ distinct constituent labels.
+Second, the trees are romanised, so any model working in Hebrew script requires a
+script conversion step; we use the authors' own tool for it, keeping our data
+comparable to theirs.
 
 \subsection{Subword Fragmentation and its Remedies}
-\todo{The ``tokenization tax'': XLM-R \citep{conneau-etal-2020-unsupervised}
-fragments Hebrew-script Yiddish. Two remedy families:
-(a) \emph{static}: vocabulary injection with FOCUS
-\citep{dobler-de-melo-2023-focus} + DAPT, as done by
-\citet{halfon-boiman-2026-yiddish}, which yielded no downstream parsing gain;
-(b) \emph{dynamic}: subword regularization -- BPE-dropout
-\citep{provilkov-etal-2020-bpe} for BPE and Kudo sampling
-\citep{kudo-2018-subword} for Unigram tokenizers like XLM-R's. Point out the
-gap: (b) has not been tested for low-resource constituency parsing with frozen
-encoders.}
+
+XLM-R \citep{conneau-etal-2020-unsupervised} learns a single SentencePiece
+vocabulary across a hundred languages, and Hebrew-script Yiddish is not among the
+well-served ones. The result is high \emph{fertility} --- subword pieces per word
+--- which dilutes each word's representation across many pieces and pushes
+word-level syntactic signal into the model's composition behaviour.
+
+Remedies split into two families. \emph{Static} approaches change the vocabulary:
+FOCUS \citep{dobler-de-melo-2023-focus} initialises newly added tokens as
+weighted combinations of semantically similar existing ones, so that new
+vocabulary starts life inside the model's latent space rather than at random.
+\citet{halfon-boiman-2026-yiddish} applied exactly this to Yiddish, with
+continued pre-training to consolidate it, and reported the null downstream result
+that motivates us.
+
+\emph{Dynamic} approaches leave the vocabulary alone and vary the segmentation
+instead. \citet{kudo-2018-subword} samples segmentations from a unigram lattice
+during training; BPE-Dropout \citep{provilkov-etal-2020-bpe} achieves a similar
+effect for BPE by randomly skipping merge operations. Both were developed for
+machine translation, where they act as regularisers, and both are reported to help
+most in low-resource conditions --- which is precisely our setting. To our
+knowledge they have not been evaluated for constituency parsing over a frozen
+encoder in a low-resource historical language, and that gap is the opening this
+paper occupies.
 
 \subsection{Parameter-Efficient Fine-Tuning}
-\todo{Adapters \citep{houlsby-etal-2019-parameter}, the MAD-X framework of
-language + task adapters \citep{pfeiffer-etal-2020-mad}, and LoRA
-\citep{hu-etal-2022-lora}. Why PEFT is attractive here: 12GB GPUs, frozen
-192M-parameter embedding matrix, course compute limits.}
+
+Adapters \citep{houlsby-etal-2019-parameter} insert small trainable bottlenecks
+between frozen transformer layers, reaching full fine-tuning quality while
+training a small fraction of the parameters. MAD-X
+\citep{pfeiffer-etal-2020-mad} organises them into \emph{language} and
+\emph{task} adapters so that a frozen multilingual encoder can be specialised to
+an unseen language, and it is the closest prior framing to our problem: adapting a
+multilingual model to Yiddish without retraining it. LoRA
+\citep{hu-etal-2022-lora} instead learns low-rank updates to existing weight
+matrices, adding no inference-time depth once merged.
+
+Beyond efficiency, this family is attractive here for a scientific reason. If a
+frozen encoder plus a small adapter recovers whatever a vocabulary rewrite
+recovers, then the fragmentation problem was never about the embedding matrix.
 
 \subsection{Neural Constituency Parsing}
-\todo{One paragraph on the chart-based CRF parser of
-\citet{zhang-etal-2020-fast} (SuPar): span scoring with biaffine attention,
-CKY/MBR decoding. NOTE: it is chart-based, not transition-based -- keep the
-terminology exact.}
 
-% =====================================================================
+We build on the CRF constituency parser of \citet{zhang-etal-2020-fast}, as
+implemented in SuPar. It is a \emph{chart-based} parser: it scores every span with
+a biaffine attention layer over span-boundary representations, and decodes with
+CKY, optionally using minimum-Bayes-risk decoding over marginals. There is no
+transition system, action sequence, or stack. Both of our interventions are
+agnostic to the decoder --- they alter the input segmentation and the encoder,
+never the chart --- which is what makes the comparison between them clean.
+
 \section{Methodology}
 % Rubric: methodology is 20pt -- data, baselines, no leakage, seeds.
 
@@ -158,27 +248,124 @@ stripped (402 with them); the most frequent are \textsc{np-sbj} (19{,}565),
 \end{table}
 
 \subsection{Base Parser}
-\todo{SuPar CRF constituency parser over the Yiddish-pretrained XLM-R
-checkpoint (\texttt{skulick/xlmb-ybc-ck05}). Entire backbone frozen (including
-the $250002 \times 768 \approx 192$M embedding matrix); trainable: the
-$\sim$8M-parameter parser head (+ scalar mix over the top $k$ encoder layers).
-State the exact trainable-parameter counts from the training logs
-(\texttt{describe\_trainable} prints them).}
+
+All cells share one architecture, so that differences between them are
+attributable to the intervention rather than to capacity. The encoder is
+\texttt{skulick/xlmb-ybc-ck05}, an XLM-R model already pre-trained by
+\citet{kulick-etal-2022-part} on the Yiddish Book Center corpus
+\citep{ybc-2023}, and it is \emph{entirely frozen}: all $278.0$M backbone parameters, including the
+$250002 \times 768 = 192{,}001{,}536$ input embedding matrix. Trainable
+parameters are the span and label MLPs, the biaffine attention scorers, and
+SuPar's scalar mix over encoder layers --- $3{,}283{,}078$ in total, or $1.17\%$
+of the $281.3$M-parameter model (Table~\ref{tab:params}). The training log prints
+this breakdown on every run, and the optimizer excludes frozen parameters
+explicitly rather than relying on gradients being zero.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lrr}
+\toprule
+\textbf{Component} & \textbf{Params} & \textbf{\%} \\
+\midrule
+Parser head (MLPs, biaffine) & 2{,}693{,}249 & 82.0 \\
+Scalar mix + projection      &   589{,}829 & 18.0 \\
+\midrule
+\textbf{Trainable}           & \textbf{3{,}283{,}078} & \textbf{1.17} \\
+Frozen backbone              & 278{,}043{,}648 & 98.83 \\
+\quad of which embeddings    & 192{,}001{,}536 & \\
+\midrule
+Total                        & 281{,}326{,}726 & 100.0 \\
+\bottomrule
+\end{tabular}
+\caption{Parameter budget, identical across all cells except for the adapter
+parameters each one adds (Section~\ref{sec:adapters}). Percentages of the total.}
+\label{tab:params}
+\end{table}
+
+Freezing is not left to the \texttt{finetune} configuration flag, which SuPar
+ignores: \texttt{TransformerEmbedding} calls
+\texttt{requires\_grad\_(True)} on the backbone unconditionally. We therefore
+freeze explicitly and assert afterwards that the embedding matrix is still frozen,
+because a silently fine-tuned encoder would invalidate every parameter-efficiency
+claim in this paper.
 
 \subsection{Approach 1: Subword Regularization}
-\todo{Describe: XLM-R uses SentencePiece \emph{Unigram}, so BPE-dropout is not
-literally applicable; we use (a) Kudo lattice sampling (\texttt{spm} backend)
-and (b) a stochastic longest-match analogue of BPE-dropout (\texttt{maxmatch}
-backend). Segmentation is resampled per batch in the training collator only;
-dev/test stay deterministic (no train/test skew, no leakage). Give the
-fertility statistics from the \texttt{--selftest} output as a small table.}
+\label{sec:subword}
+
+The idea is to stop treating the tokenizer's output as ground truth. If the model
+sees a word segmented several different ways during training, it cannot rely on
+any single segmentation, and must instead compose the word's meaning from
+whatever pieces it is given.
+
+\paragraph{Why not BPE-Dropout literally.} XLM-R's tokenizer is SentencePiece
+\emph{Unigram}, not BPE. It has no merge table, so there are no merges to drop and
+BPE-Dropout does not apply as written. We therefore implement two backends. The
+\texttt{spm} backend is Kudo's principled analogue, sampling from the unigram
+lattice. The \texttt{maxmatch} backend is a behavioural analogue of BPE-Dropout
+over the vocabulary: at each position, with probability $p$, skip the longest
+matching piece and take the next-longest.
+
+In our environment only \texttt{maxmatch} was available: recent
+\texttt{transformers} releases no longer expose the slow tokenizer that grants
+access to the underlying SentencePiece model, and the checkpoint ships no
+\texttt{sentencepiece.bpe.model} file. We report \texttt{maxmatch} results only,
+and note that the code raises rather than silently falling back --- an earlier
+version of our own tooling did fall back, which would have produced two
+identically-configured cells reported under different names.
+
+\paragraph{Where the resampling happens.} This is the load-bearing
+implementation detail. SuPar's \texttt{Dataset.build} numericalises the entire
+corpus once, before the first epoch, and its collate function merely stacks
+pre-computed tensors. A stochastic tokenizer handed to the field alone would
+therefore be sampled exactly once per sentence for the whole run --- no
+regularization at all. We instead replace the \emph{training} loader's collate
+function so that each sentence is re-segmented every time it is drawn into a
+batch. Development and test loaders keep SuPar's default collator and stay
+deterministic, so no reported score is ever computed on perturbed input.
+
+\paragraph{Safety properties.} Sampled pieces are checked against the tokenizer
+vocabulary, so a sampled word can never degrade to \texttt{<unk>};
+single-piece words are never re-segmented; and segmentations longer than
+\texttt{fix\_len} fall back to the deterministic form, because
+\texttt{SubwordField} truncates without warning at that limit. We raise
+\texttt{fix\_len} from SuPar's default of $20$ to $32$ for this reason, and the
+sampler reports the longest segmentation it produced so the margin is visible
+(Table~\ref{tab:fertility}).
 
 \subsection{Approach 2: Language Adapters}
-\todo{MAD-X-style adapters in a fully frozen backbone: LoRA on query/value
-projections ($r{=}16$, $\alpha{=}32$) and Pfeiffer bottleneck adapters
-(reduction 16, zero-initialized up-projection = identity at step 0). Adapter
-learning rate handled separately (3e-4 vs.\ SuPar's 5e-5 encoder rate) --
-explain why. Report adapter parameter counts ($\sim$1--2M).}
+\label{sec:adapters}
+
+Here the vocabulary and the segmentation are left untouched, and the encoder is
+given a small amount of capacity to compensate for fragmentation itself. We inject
+adapters into the frozen backbone in two families.
+
+\textbf{LoRA} \citep{hu-etal-2022-lora} on the self-attention query and value
+projections ($r{=}16$, $\alpha{=}32$, dropout $0.1$), adding roughly $1.2$M
+trainable parameters. We deliberately exclude the \texttt{dense} sublayers from
+the target list: in XLM-R that name matches three structurally different
+sublayers, making the configuration ambiguous.
+
+\textbf{Pfeiffer bottleneck adapters} \citep{pfeiffer-etal-2020-mad}, that is
+$h + W_{\text{up}}(\mathrm{GELU}(W_{\text{down}}(h)))$ after each layer's output
+LayerNorm, with reduction factor $16$ ($768 \rightarrow 48 \rightarrow 768$) and
+$W_{\text{up}}$ initialised to zero. The zero initialisation matters: at step $0$
+the adapted model \emph{is} the frozen baseline, so the adapters cannot damage the
+starting point and any change is something they learned.
+
+\paragraph{The adapter learning rate.} SuPar assigns \texttt{args.lr} to every
+parameter whose name begins with \texttt{encoder}, and adapters live under
+\texttt{encoder.bert.*}. They would therefore inherit $5\times10^{-5}$, far too
+low for randomly initialised adapter weights, which typically want
+$10^{-4}$ to $10^{-3}$. A run left at the inherited rate would look like
+``adapters do not help'' when the real finding is an under-trained adapter, so we
+intercept the optimizer and rate adapter parameters separately, sweeping
+$\{1,3,10\}\times10^{-4}$.
+
+\paragraph{What we do not implement.} MAD-X also uses invertible adapters on the
+embedding layer for unseen scripts. Those are the component that requires
+unlabelled pre-training to be useful, which is exactly the cost these approaches
+exist to avoid, so we omit them and note the omission.
 
 \subsection{Frontier-LLM Control Experiment}
 % This answers the instructor's question: is a custom model still needed?
@@ -204,15 +391,40 @@ received and coverage is reported separately.
 
 % =====================================================================
 \section{Experimental Setup}
-\todo{One code path for all cells (\texttt{train\_parser\_peft.py}), identical
-seeding; modes: baseline / bpe-dropout / adapters / both. Hyperparameters to
-the appendix. Mention: seed(s) used -- if compute allows, run the main cells
-with 3 seeds and report mean$\pm$std (the rubric explicitly asks you to
-account for randomness); early stopping on dev only; sanity overfitting check
-on a small subset (the rubric asks for it -- run one job on 100 sentences and
-show the model reaches $\sim$100\% train F1).}
 
-% =====================================================================
+\paragraph{One code path.} All cells are produced by a single entrypoint with one
+seeding path, selected by a \texttt{--mode} flag: \texttt{baseline},
+\texttt{bpe-dropout}, \texttt{adapters}, or \texttt{both}. \texttt{baseline}
+reproduces the frozen-encoder configuration exactly, so the comparison is not
+confounded by differences between scripts. Every cell writes to a directory named
+after all settings that distinguish it --- mode, adapter family, backend, layer
+count, seed --- because two of our cells otherwise collide on disk.
+
+\paragraph{Hyperparameters.} Token-level batch size $2000$, at most $100$ epochs
+with early stopping on the development set (patience $10$), encoder learning rate
+$5\times10^{-5}$ with a $0.1$ warmup fraction and a parser-head multiplier of
+$20$, gradient clipping at $5.0$. Subword regularization uses $p{=}0.1$ and
+resamples every multi-piece word. Full settings are in
+Appendix~\ref{app:hyper}.
+
+\paragraph{Hardware.} A single GPU per run on the university's shared
+\texttt{studentkillable} partition, which mixes NVIDIA RTX 2080 ($8$\,GB) and
+TITAN Xp ($12$\,GB) cards. Two properties of that environment shaped our setup.
+The partition is preemptible, so each cell is an independent job that can be
+resubmitted rather than one long run; and current PyTorch wheels build no kernels
+for the TITAN Xp's compute capability, which caused a job to report a working GPU
+and then fail at its first kernel launch --- so our training entrypoint now
+launches a probe kernel and refuses to start if it fails.
+
+\paragraph{Sanity check.} Following the course guidance to demonstrate that
+training works before interpreting any negative result, we first overfit a
+$100$-sentence subset with development and test sets identical to it.
+\todo{Report the final F1 reached on that subset in one sentence.}
+
+\paragraph{Randomness.} \todo{State the number of seeds actually run and report
+mean$\pm$std for the cells you report; if only one seed completed, say so
+explicitly rather than implying more.}
+
 \section{Results}
 % Rubric: results & discussion 20pt. Give full numbers, then interpret.
 
@@ -272,10 +484,40 @@ Models accessed \todo{date}; the 3-shot frontier run returned 19 of 20 requests
 \label{tab:llm}
 \end{table}
 
-\todo{Present the main ablation table (Table~\ref{tab:main}), the
-fertility/segmentation statistics from the sampler self-test, and a
-training-curve figure as PDF. One paragraph per table.}
+\paragraph{The tokenization tax, measured.} Table~\ref{tab:fertility}
+quantifies the problem the interventions target, over $5000$ training terminals.
+XLM-R spends an average of $2.05$ subword pieces per Yiddish word
+deterministically; under sampling this rises to $2.58$, and about a third of
+words receive more than one distinct segmentation across draws. The longest
+sampled segmentation observed was $14$ pieces, comfortably below our
+\texttt{fix\_len} of $32$, so no word was silently truncated. These numbers also
+bound what subword regularization can do: it perturbs roughly a third of tokens,
+and leaves single-piece words untouched by construction.
 
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lr}
+\toprule
+\textbf{Statistic} (5000 train terminals) & \textbf{Value} \\
+\midrule
+Fertility, deterministic (pieces/word) & 2.053 \\
+Fertility, sampled                     & 2.579 \\
+Mean distinct segmentations per word    & 1.395 \\
+Words with any variation               & 31.3\% \\
+Longest sampled segmentation           & 14 pieces \\
+\bottomrule
+\end{tabular}
+\caption{Segmentation statistics for the \texttt{maxmatch} backend at $p{=}0.1$,
+from the sampler self-test. Fertility is the standard measure of the
+``tokenization tax''; the variation rate is the actual regularization signal.}
+\label{tab:fertility}
+\end{table}
+
+\todo{Add the main ablation table (Table~\ref{tab:main}) and a training-curve
+figure as PDF once the grid finishes, with one paragraph of interpretation each.}
+
+\label{sec:results-llm}
 \paragraph{The LLM control.} Table~\ref{tab:llm} reports two model tiers, each
 with a matched zero-shot and 3-shot condition over the same sentences. Three
 findings hold across both tiers.
@@ -311,41 +553,81 @@ models have absorbed Penn-style historical annotation in general and select the
 wrong variant of it, rather than failing to analyse Yiddish; the 3-shot
 conditions visibly adopt this corpus's inventory instead.
 
-Even read charitably, this does not displace a trained parser: 54.67 labeled F1
-is roughly 29 points below the frozen-encoder baseline, and even the model's
-\emph{unlabeled} score does not reach the baseline's \emph{labeled} score.
-\todo{Once the 3-shot run is in, state whether exemplars close the
-scheme-variant gap. That is the decisive follow-up: if three examples move
-labeled F1 sharply, the deficit is conventional, and if they do not, it is
-a genuine limit on zero-shot structural analysis of a low-resource historical
-language.}
+Even read charitably, none of this displaces a trained parser: the best cell's
+$54.24$ labeled F1 is roughly thirty points below the frozen-encoder baseline,
+and even its \emph{unlabeled} score does not reach the baseline's \emph{labeled}
+score.
+
+The few-shot conditions answer the question that motivated running them. Three
+examples do move labeled F1 substantially, so a meaningful part of the zero-shot
+deficit is conventional rather than linguistic --- the models know Penn-style
+historical annotation and needed to be shown \emph{which} variant this corpus
+uses. But the decomposition above bounds how much that means: once token fidelity
+is held constant, the gain is $+3.7$ to $+4.9$ points, not $+8.7$ to $+13.0$. In
+other words, exemplars fix the output contract first and the annotation scheme
+second, and what remains after both is a genuine shortfall in structural analysis
+of historical Yiddish.
 
 % =====================================================================
 \section{Discussion}
-\todo{Interpret, don't repeat. Expected storyline (adjust to actual numbers):
-(1) If subword regularization and adapters land near the baseline: three
-independent interventions (static injection, regularization, PEFT) now all
-fail to move frozen-encoder parsing F1 -- strong evidence that constituency
-structure is resilient to subword fragmentation, extending
-\citet{halfon-boiman-2026-yiddish}'s null result. Emphasize the cost side:
-PEFT reaches the same F1 with $\sim$1--2M trainable parameters and zero
-pre-training.
-(2) If something helps: quantify, and relate to which failure mode it fixes.
-(3) LLM control: the deficit is large (best cell 54.24 vs.\ 83+ LF) and its
-shape is diagnostic. Well-formed output, a persistent labeled/unlabeled gap, and
-a few-shot gain that halves once token fidelity is controlled for, together
-indicate an output-conformance problem layered on a real but incomplete
-syntactic analysis -- not an inability to read the language. The dedicated
-parser is justified specifically for \emph{annotation-faithful} structure, which
-is what a treebank-trained tool provides and a generalist model does not. It
-also suggests that LLM evaluations on treebank tasks should report token
-fidelity: without it, a model that cannot follow the output contract is
-indistinguishable from one that cannot parse.
-(4) Negative results are explicitly valued by the rubric if analyzed well.}
 
-% =====================================================================
+\paragraph{What the LLM control settles.} The deficit is large and, more usefully,
+structured. Output is essentially always well-formed; the labeled/unlabeled gap
+persists across every condition; and the apparent benefit of in-context examples
+halves once token fidelity is controlled for. Taken together these say that the
+models can read historical Yiddish and produce plausible constituent structure,
+but cannot reliably deliver \emph{annotation-faithful} analyses of it. That is
+precisely the capability a treebank-trained parser supplies, and it is why the
+existence of strong general-purpose models does not retire this task.
+
+\paragraph{A methodological point.} Token fidelity deserves to be reported
+routinely in LLM parsing evaluations. In our Lite zero-shot condition, $56$ of
+$100$ answers failed to reproduce the supplied tokens, and those answers score
+near zero by construction --- a tree over different terminals cannot align to the
+gold spans at all. An evaluation reporting only F1 would have attributed that to
+parsing inability. The distinction is not cosmetic: it changes the headline number
+by more than twenty points and it points at a different fix (prompt and decoding
+constraints, rather than model capability).
+
+\paragraph{On our own measurement.} We twice found that a plausible-looking
+number was an artifact rather than a result: an API rate-limit failure counted as
+a model error, and a label inventory counted with co-indexation attached. Both
+were caught because the pipeline stores per-sentence records and can recompute
+summaries without re-querying. We would recommend that design to anyone
+evaluating a paid API: the ability to re-derive every metric offline is worth more
+than the disk it costs.
+
+\todo{Add the parser discussion once the grid finishes. Two branches:
+(1) If subword regularization and adapters land near the baseline, then three
+independent interventions -- static vocabulary injection, dynamic
+re-segmentation, and parameter-efficient adaptation -- have now all failed to
+move frozen-encoder parsing F1, which is much stronger evidence for the
+resilience of constituency structure to fragmentation than
+\citet{halfon-boiman-2026-yiddish}'s single null result. Emphasise the cost
+asymmetry: the same F1 for 1--2M trainable parameters and no pre-training run.
+(2) If something does help, quantify it and say which failure mode it addresses;
+relate it to the fertility statistics in Table~\ref{tab:fertility}, since those
+bound how many tokens the intervention can possibly affect.}
+
 \section{Conclusion}
-\todo{3-5 sentences: question, method, answer, one-sentence outlook.}
+
+We asked whether the subword-fragmentation bottleneck in Yiddish parsing yields
+to dynamic, parameter-efficient adaptation, after a prior static attempt --- clean
+vocabulary injection plus continued pre-training --- left downstream parsing
+unchanged. We evaluated stochastic subword re-segmentation and MAD-X-style
+adapters over a fully frozen encoder, training $1.17\%$ of the model's parameters
+and requiring no pre-training at all. \todo{One or two sentences with the
+outcome, and what it implies about where the fragmentation problem does and does
+not live.}
+
+Alongside this we tested the premise itself: whether a current general-purpose
+model already parses historical Yiddish well enough to make the exercise moot. It
+does not. The best of four frontier configurations reaches $54.2$ labeled F1,
+roughly thirty points below a trained parser, and its unlabeled score does not
+reach the parser's labeled score. The shape of that gap is informative --- output
+is well-formed, and in-context examples raise token fidelity far more than parse
+quality --- which suggests that treebank-faithful syntactic analysis remains a
+task where a small, dedicated, cheaply-trained model earns its place.
 
 \section*{Limitations}
 Our evidence has several bounds. The treebank is historical, so conclusions may
@@ -361,14 +643,52 @@ did not finish.}
 
 % Required by the course guidelines (transparency, not graded).
 \section*{AI Disclosure and Reflection}
-\todo{Be specific and honest -- the guidelines require how/why/where AI was
-used, which tools/models, and a reflection on how it went. Cover at least:
-brainstorming at proposal stage (Gemini), coding assistance for the PEFT
-integration and the LLM-baseline script (Claude), LaTeX/formatting help, and
-what you verified yourselves. Per the course AI policy, you own every claim in
-this paper.}
 
-% =====================================================================
+\todo{Read this draft critically and rewrite anything that does not match your own
+recollection --- you own every claim in it.}
+
+We used AI tools substantially in this project, in four distinguishable roles.
+
+\textbf{Brainstorming (Gemini, proposal stage).} We used Gemini to survey
+parameter-efficient fine-tuning methods and subword regularization variants while
+choosing a direction, and to tighten the English of the proposal.
+
+\textbf{Implementation (Claude, via Claude Code).} The parameter-efficient
+additions --- the stochastic segmentation sampler and its training collator, the
+adapter injection and freezing logic, the shared training entrypoint, and the
+checkpoint-safe evaluator --- were written with Claude in an iterative loop, as
+were the frontier-LLM baseline script and the data and statistics utilities. The
+design decisions those files encode were arrived at through that dialogue: for
+instance, that resampling must replace the training collator rather than the
+tokenizer field, because SuPar numericalises the corpus once before training.
+
+\textbf{Debugging and cluster operation.} A substantial part of the assistance was
+diagnostic rather than generative. Several failures were identified this way,
+including a PyTorch build whose CUDA version exceeded the cluster's driver (which
+falls back to CPU with only a warning, roughly $100\times$ slower); a later build
+lacking kernels for the compute capability of one of the partition's GPU
+generations; a silent fallback in our own sampler that would have reported two
+identically-configured experiments under different names; and a metric that
+counted API rate-limit failures as model errors, understating a model by fourteen
+points before we corrected it.
+
+\textbf{Writing.} Sections of this report were drafted with Claude from our
+results and notes, then revised by us. Every number reported here was produced by
+our own runs and checked against the logs and result files in the repository.
+
+\paragraph{Reflection.} The assistance was most valuable where it was least
+glamorous. Reading a stack trace, noticing that
+\texttt{torch.cuda.is\_available()} can return \texttt{True} on a GPU whose
+kernels the wheel does not contain, or that a $73\%$ ``syntactic validity rate''
+was really a quota artifact, saved us days and prevented at least two wrong
+numbers from reaching this paper. It was least reliable when reasoning
+confidently from incomplete evidence: an early diagnosis of our slow training run
+blamed the wrong cause twice --- first a missing GPU allocation, then the login
+node --- before the actual error message in the job's \texttt{stderr} settled it.
+The practical lesson we take is that AI assistance accelerated our work in
+proportion to how much concrete evidence we put in front of it, and misled us in
+proportion to how little.
+
 \bibliography{references}
 
 \appendix
@@ -382,25 +702,69 @@ this paper.}
 \toprule
 \textbf{Hyperparameter} & \textbf{Value} \\
 \midrule
+Encoder & \texttt{skulick/xlmb-ybc-ck05} \\
 Batch size (tokens)        & 2000 \\
-Epochs (max / patience)    & 100 / 10 \\
-Encoder LR                 & 5e-5 \\
-Head LR multiplier         & 20 \\
-Adapter LR                 & \todo{3e-4 (swept 1e-4/3e-4/1e-3)} \\
+Max epochs / patience      & 100 / 10 \\
+Encoder LR                 & $5\times10^{-5}$ \\
+Parser-head LR multiplier  & 20 \\
+Warmup fraction            & 0.1 \\
+Gradient clipping          & 5.0 \\
+LR decay / decay steps     & 0.75 / 5000 \\
+Adapter LR                 & $3\times10^{-4}$ (swept $1,3,10\times10^{-4}$) \\
 LoRA $r$ / $\alpha$ / dropout & 16 / 32 / 0.1 \\
-Bottleneck reduction       & 16 \\
-Subword reg.\ $p$ / $\alpha$ / word-$p$ & 0.1 / 0.1 / 1.0 \\
-fix\_len                   & 32 \\
-n\_bert\_layers / pooling  & \todo{4 / mean (or 12)} \\
+LoRA targets               & query, value \\
+Bottleneck reduction       & 16 ($768\!\to\!48\!\to\!768$) \\
+Subword reg.\ $p$ / word-$p$ & 0.1 / 1.0 \\
+\texttt{fix\_len}          & 32 \\
+Encoder layers to scalar mix & 4 \\
+Subword pooling            & mean \\
+MBR decoding               & yes \\
 Seed(s)                    & \todo{1 (+2,3?)} \\
 \bottomrule
 \end{tabular}
-\caption{Training hyperparameters.}
+\caption{Training configuration, identical across cells except for the
+intervention under test.}
 \end{table}
 
+Note on layer mixing: SuPar 1.1.4 always applies a scalar mix over the top
+\texttt{n\_bert\_layers} encoder layers; its \texttt{bert\_pooling} argument
+controls only how subword pieces are pooled into a word vector. We mention this
+because \citet{halfon-boiman-2026-yiddish} describe setting
+\texttt{bert\_pooling} to \texttt{scalar\_mix}, which is not one of the accepted
+values, so the configuration difference between their reported runs and ours is
+the number of mixed layers rather than the pooling mode.
+
 \section{LLM Prompts}
-\todo{Reproduce the exact zero-shot and few-shot prompt templates from
-\texttt{testing.py}, and one full example of model input/output.}
+\label{app:prompts}
+
+The zero-shot prompt is the instruction block below, followed by
+\texttt{Tokens: <space-separated gold tokens>} and \texttt{Tree:}. The few-shot
+prompt inserts $k{=}3$ \texttt{Tokens}/\texttt{Tree} pairs, drawn from the
+\emph{training} split only, between the instructions and the target sentence.
+Decoding is at temperature $0$.
+
+\begin{quote}\small\ttfamily
+You are an expert syntactic parser for historical Yiddish, annotated in the style
+of the Penn Parsed Corpus of Historical Yiddish (PPCHY): clause labels such as
+IP-MAT / IP-SUB / CP-QUE, phrase labels with function tags such as NP-SBJ /
+NP-OB1 / NP-PRD / PP / ADVP-TMP, and a POS preterminal above every token.
+
+RULES:
+
+1. Output ONLY the raw bracketed S-expression tree, nothing else.
+
+2. Do NOT wrap the output in markdown code fences.
+
+3. Use EXACTLY the given tokens as the leaves, in the given order -- do not split,
+merge, add, or drop tokens. Put exactly one POS preterminal above each token.
+\end{quote}
+
+Rule 3 is the one the models most often violate, and
+Section~\ref{sec:results-llm} treats compliance with it as a separate measurement
+from parse quality. We note that the instruction names \textsc{np-ob1} as an
+example function tag, which is a label from a sibling Penn corpus rather than this
+PPCHY release; this may contribute to the label-variant confusions in
+Appendix~\ref{app:labels}, and a corrected prompt is an obvious follow-up.
 
 \section{LLM Label Confusions}
 \label{app:labels}
