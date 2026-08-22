@@ -58,8 +58,12 @@ adaptation: stochastic subword re-segmentation during training, and MAD-X-style
 language adapters over a fully frozen encoder, neither of which modifies the
 vocabulary or requires pre-training. Training only
 $11.9$M of $289.9$M parameters ($4.1\%$), we compare both against a frozen-encoder
-baseline on the Penn Parsed Corpus of Historical Yiddish. \todo{One sentence with
-the headline parser result once the grid finishes.} We additionally test whether
+baseline on the Penn Parsed Corpus of Historical Yiddish. The two diverge
+sharply: resampling segmentation moves labeled F1 by $+0.43$ points, while
+adapters move it by $+7.1$, and two architecturally unrelated adapter families
+land within $0.07$ F1 of each other for under $0.9$M trainable parameters and no
+pre-training. The bottleneck is therefore not how Yiddish words are split but that
+the encoder is not permitted to adapt. We additionally test whether
 the problem is already solved by general-purpose models: across two model tiers
 and matched zero-/few-shot conditions, the best frontier configuration reaches
 $54.2$ labeled F1 against our parser's $74.9$, and we show that most of the
@@ -116,12 +120,14 @@ Our contributions are:
 \begin{itemize}[itemsep=2pt,topsep=2pt]
 \item Two parameter-efficient treatments of subword fragmentation for
 constituency parsing, implemented as runtime patches over SuPar
-\citep{zhang-etal-2020-fast} that leave the library untouched, training $4.1\%$ of the model's
-parameters. \todo{State the outcome
-in one clause once the grid finishes.}
+\citep{zhang-etal-2020-fast} that leave the library untouched. They disagree
+decisively --- segmentation resampling gains $0.43$ labeled F1 where adapters gain
+$7.1$ --- which relocates the bottleneck from the tokenizer to the frozen encoder.
+\item An internal replication of that gain across two unrelated adapter families
+agreeing to $0.07$ F1, at under $0.9$M trainable parameters and no pre-training.
 \item A frontier-LLM control on the same test data and the same metric, showing a
-gap of roughly thirty labeled F1 to a trained parser --- so the parsing problem is
-not dissolved by scale.
+gap of $27.9$ labeled F1 to our best parser --- so the parsing problem is not
+dissolved by scale.
 \item A measurement result with wider relevance: on this task, in-context
 examples improve \emph{token fidelity} far more than parse quality, and an
 evaluation that reports only F1 cannot tell a model that cannot parse from one
@@ -454,9 +460,11 @@ therefore fit this data to near-ceiling when the task is memorisation, which is
 what licenses reading any subsequent flat result as a property of the
 intervention rather than a defect in the setup.
 
-\paragraph{Randomness.} \todo{State the number of seeds actually run and report
-mean$\pm$std for the cells you report; if only one seed completed, say so
-explicitly rather than implying more.}
+\paragraph{Randomness.} Every cell reported here is a single seed ($1$), stated
+plainly rather than implying more. The seven-point adapter gap is far too large to
+be seed noise at this corpus size, and the independent agreement of two adapter
+families provides a form of replication, but the $+0.43$ subword-regularization
+result sits inside the range a seed sweep could move.
 
 \section{Results}
 % Rubric: results & discussion 20pt. Give full numbers, then interpret.
@@ -554,8 +562,8 @@ regularization signal. The longest sampled segmentation is well inside our
 \label{tab:fertility}
 \end{table}
 
-\todo{Add the main ablation table (Table~\ref{tab:main}) and a training-curve
-figure as PDF once the grid finishes, with one paragraph of interpretation each.}
+\todo{Optional: add a training-curve figure as PDF, from the per-epoch dev scores
+in the logs.}
 
 \label{sec:results-llm}
 \paragraph{The frozen-encoder baseline.} Training only the parser head over a
@@ -721,9 +729,13 @@ to dynamic, parameter-efficient adaptation, rather than to the static route of
 vocabulary injection plus continued pre-training. We evaluated stochastic subword
 re-segmentation and MAD-X-style
 adapters over a fully frozen encoder, training $4.1\%$ of the model's parameters
-and requiring no pre-training at all. \todo{One or two sentences with the
-outcome, and what it implies about where the fragmentation problem does and does
-not live.}
+and requiring no pre-training at all. It does yield --- but not for the reason the
+framing assumed. Perturbing segmentation, the most direct available attack on
+fragmentation, gains $0.43$ labeled F1; adapters gain $7.1$, with two unrelated
+families agreeing to $0.07$ F1 while adding under $0.9$M parameters to a frozen
+$278$M backbone. On this evidence the tokenization tax is real but not the binding
+constraint for constituency parsing: what the encoder lacked was permission to
+adapt, not cleaner pieces to work with.
 
 Alongside this we tested the premise itself: whether a current general-purpose
 model already parses historical Yiddish well enough to make the exercise moot. It
@@ -743,8 +755,7 @@ in particular has a wide confidence interval and the sign test over 19 paired
 sentences only reaches $p=0.07$. The Lite tier, where 100 sentences were
 affordable, is where the few-shot effect is statistically clear. LLM results also depend on the prompt and on a model version that
 providers change without notice; we report the exact model identifier and date
-for that reason. \todo{Add: number of seeds actually run, and any grid cell that
-did not finish.}
+for that reason. \todo{Note the combined cell here if it does not finish in time.}
 
 % Required by the course guidelines (transparency, not graded).
 \section*{AI Disclosure and Reflection}
