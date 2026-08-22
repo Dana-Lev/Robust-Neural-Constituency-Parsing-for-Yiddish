@@ -202,38 +202,58 @@ If `pp_psd.sh` fails at the very end of `run.sh`, that is fine — it runs *afte
 
 ## Step 4 — Turn the JSON into SuPar-ready splits
 
+Make sure you are in the parser environment, at the root of the repository:
+
 ```bash
 conda activate yiddish
 cd "$NLP_STORAGE/Robust-Neural-Constituency-Parsing-for-Yiddish"
-./scripts/build_ppchy_data.sh
 ```
 
-That runs four steps: JSON → Hebrew-script trees → `(TOP …)` normalization →
-90/5/5 split (seed 42) → removal of trees SuPar would reject.
+The build script runs four steps: JSON → Hebrew-script trees → `(TOP …)`
+normalization → 90/5/5 split (seed 42) → removal of trees SuPar would reject.
 
-### Corpus selection: use the whole corpus
+### One decision to make consciously
 
-The default ingests **every** PPCHY component, and that is the right choice here:
-
-- The intervention targets fragmentation caused by orthographic variation, and
-  the older non-SYO components are where spelling is messiest. Dropping them
-  removes the phenomenon under test and biases towards an uninterpretable null.
-- The prior project's 83.81 LF came from code that ingested everything (its
-  ~17k sentences cannot come from an 83k-token subset), so matching its *code*
-  is what makes the reference rows comparable. Its paper's claim to follow
-  Kulick et al. (2022) is the part that does not match its implementation.
-- Differences of ±1 LF need the larger test set to be visible at all.
-
-The report must then describe the data as *all PPCHY components*, and note the
-discrepancy with the prior write-up.
+By default this ingests **every** PPCHY component. The prior project's report
+claims to follow Kulick et al. (2022) and use only the two largest 20th-century
+texts — but its code processed everything. Pick one and make the report match:
 
 ```bash
-# whole corpus -- what to use
-./scripts/build_ppchy_data.sh
+# Option A: whole corpus (default) -- what this project uses
+bash scripts/build_ppchy_data.sh
 
-# the Kulick et al. subset, for reference only
-ONLY="hirshbein olsvanger" ./scripts/build_ppchy_data.sh
+# Option B: the Kulick et al. subset
+ONLY="hirshbein olsvanger" bash scripts/build_ppchy_data.sh
 ```
+
+**Use Option A**, for three reasons: the older non-SYO components are exactly
+where orthographic variation and fragmentation are worst, so dropping them
+removes the phenomenon under test; the prior project's 83.81 LF came from the
+whole corpus, so Option A is what makes those reference rows comparable; and
+differences of ±1 LF need the larger test set to be visible. The report must then
+describe the data as *all PPCHY components* and note the discrepancy with the
+prior write-up.
+
+### Record the statistics — the report needs them
+
+```bash
+mkdir -p results
+python scripts/dataset_stats.py \
+    --data-dir yiddish_parser/data/processed/supar_ready \
+    --encoder skulick/xlmb-ybc-ck05 --markdown | tee results/dataset_stats.md
+```
+
+**Check:** read the output table. `train.txt`, `dev.txt` and `test.txt` must all
+exist with non-zero sentence counts, and `Malformed` must be **0** after
+cleaning. With Option A you should get exactly **15,394 / 855 / 856**.
+
+That figure is worth pausing on: 15,394 + 855 + 856 = 17,105, and this script's
+90/5/5 split with integer truncation maps 17,105 trees to precisely those three
+numbers. So hitting them confirms the pipeline is deterministic *and* settles the
+question above — the prior project's identical counts are only reachable from the
+whole corpus, not from an 83k-token subset. (If the cleaning step removed any
+trees, your counts will be slightly lower. Record what you actually get, and cite
+those numbers in the report.)
 
 ### Record which components landed in each split
 
@@ -247,23 +267,11 @@ python scripts/split_provenance.py \
     --write-labels | tee results/split_composition.txt
 ```
 
-This gives two things: the composition of each split for the report's data
-section, and `test.sources.txt` aligned line-for-line with `test.txt`. With that
-label file, test F1 can be broken down per component **without retraining** —
-which is how you answer "does subword regularization help more where the
-orthography is noisier?", the sharpest version of this project's question.
-
-### Record the statistics — the report needs them
-
-```bash
-python scripts/dataset_stats.py \
-    --data-dir yiddish_parser/data/processed/supar_ready \
-    --encoder skulick/xlmb-ybc-ck05 --markdown | tee results/dataset_stats.md
-```
-
-**Check:** `train.txt`, `dev.txt`, `test.txt` all exist with non-zero sentence
-counts, and `malformed` is 0 after cleaning. Use *these* numbers in the report —
-never the inherited 15,394 / 855 / 856.
+This gives the composition of each split for the report's data section, plus
+`test.sources.txt` aligned line-for-line with `test.txt`. With that label file,
+test F1 can be broken down per component **without retraining** — which is how
+you answer "does subword regularization help more where the orthography is
+noisier?", the sharpest version of this project's question.
 
 ---
 

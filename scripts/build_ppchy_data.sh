@@ -5,8 +5,10 @@
 # GPU, no sbatch needed). Assumes ppchyprep has already produced its JSON
 # output; see RUNBOOK.md Step 3 for that part.
 #
-#   ./scripts/build_ppchy_data.sh
-#   ONLY="hirshbein olsvanger" ./scripts/build_ppchy_data.sh   # Kulick et al. subset
+#   bash scripts/build_ppchy_data.sh
+#   ONLY="hirshbein olsvanger" bash scripts/build_ppchy_data.sh   # Kulick subset
+#
+# Expected on the whole corpus: 17,105 trees -> 15,394 / 855 / 856.
 #
 set -euo pipefail
 
@@ -49,7 +51,9 @@ python src/clean_tree_data.py
 
 echo
 echo "Done. Splits are in yiddish_parser/data/processed/supar_ready/"
-echo "Now record the statistics for the report:"
-echo "  cd $REPO_ROOT && python scripts/dataset_stats.py \\"
+echo "Next (RUNBOOK Step 4):"
+echo "  cd $REPO_ROOT && mkdir -p results"
+echo "  python scripts/dataset_stats.py \\"
 echo "      --data-dir yiddish_parser/data/processed/supar_ready \\"
 echo "      --encoder skulick/xlmb-ybc-ck05 --markdown | tee results/dataset_stats.md"
+echo "  python scripts/split_provenance.py --write-labels | tee results/split_composition.txt"
