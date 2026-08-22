@@ -295,18 +295,23 @@ max approaches 32, raise `--fix-len` (SuPar truncates silently).
 the model *can* fit data — proof there is no bug:
 
 ```bash
-mkdir -p data/processed/overfit
+mkdir -p data/processed/overfit logs
 head -100 data/processed/supar_ready/train.txt > data/processed/overfit/train.txt
 cp data/processed/overfit/train.txt data/processed/overfit/dev.txt
 cp data/processed/overfit/train.txt data/processed/overfit/test.txt
 
-srun -p studentkillable --gpus=1 --time=1:00:00 --mem=32G --pty \
-    python src/train_parser_peft.py --mode baseline \
-        --encoder-path skulick/xlmb-ybc-ck05 \
-        --data-dir data/processed/overfit \
-        --output-dir ./output/sanity_overfit \
-        --epochs 40 --patience 40 2>&1 | tee ../results/sanity_overfit.txt
+DATA_DIR=data/processed/overfit EPOCHS=40 PATIENCE=40 \
+OUTPUT_DIR=./output/sanity_overfit SKIP_SELFTEST=1 \
+    sbatch src/parser_train_peft.slurm baseline
 ```
+
+Then watch it: `tail -f logs/peft_<jobid>.out`
+
+**Use `sbatch`, not `srun --pty`.** An interactive job dies with your terminal,
+so a dropped VPN or a closed laptop kills the run — and a job launched *outside*
+any allocation silently lands on the login node with no GPU, which is the single
+most expensive mistake available here. `sbatch` always requests the GPU declared
+in the job script and keeps running after you disconnect.
 
 **Check:** the run starts by printing its device. You want
 

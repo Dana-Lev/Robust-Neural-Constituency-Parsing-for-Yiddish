@@ -56,12 +56,20 @@ BACKEND="${3:-maxmatch}"
 SEED="${SEED:-1}"
 ADAPTER_LR="${ADAPTER_LR:-3e-4}"
 N_BERT_LAYERS="${N_BERT_LAYERS:-4}"
+# Overridable so the sanity-overfit check (RUNBOOK Step 5b) can also run through
+# sbatch, which survives an SSH drop -- srun --pty does not.
+DATA_DIR="${DATA_DIR:-data/processed/supar_ready}"
+EPOCHS="${EPOCHS:-100}"
+PATIENCE="${PATIENCE:-10}"
 
 echo "Mode=$MODE  AdapterType=$ADAPTER_TYPE  Backend=$BACKEND  Seed=$SEED  Encoder=$ENCODER"
 
-# Sanity check the segmentation sampler before burning GPU hours.
-python src/train_parser_peft.py --mode "$MODE" --encoder-path "$ENCODER" \
-    --backend "$BACKEND" --selftest
+# Sanity check the segmentation sampler before burning GPU hours (skipped for
+# modes that do not resegment, and when SKIP_SELFTEST=1).
+if [ "${SKIP_SELFTEST:-0}" != "1" ] && [ "$MODE" != "baseline" ] && [ "$MODE" != "adapters" ]; then
+    python src/train_parser_peft.py --mode "$MODE" --encoder-path "$ENCODER" \
+        --backend "$BACKEND" --data-dir "$DATA_DIR" --selftest
+fi
 
 OUTPUT_DIR="${OUTPUT_DIR:-}"
 EXTRA=""
@@ -81,8 +89,9 @@ python src/train_parser_peft.py \
     --adapter-lr "$ADAPTER_LR" \
     --n-bert-layers "$N_BERT_LAYERS" \
     --batch-size 2000 \
-    --epochs 100 \
-    --patience 10 \
+    --data-dir "$DATA_DIR" \
+    --epochs "$EPOCHS" \
+    --patience "$PATIENCE" \
     --seed "$SEED" $EXTRA
 
 echo "Job Finished."
