@@ -509,6 +509,19 @@ LCM, trainable parameters — the trainable count is printed by
 **Check:** `evaluate_peft.py` raises rather than printing a number if the adapter
 configuration is wrong. A crash here is the script protecting you.
 
+Evaluation picks its device automatically: it uses the GPU only if a probe
+kernel actually runs, and otherwise falls back to CPU with an explanation, since
+scoring 856 sentences is cheap. Two flags matter on a mixed-GPU partition:
+
+```bash
+# force CPU (safe anywhere, including the login node)
+python src/evaluate_peft.py --path ... --adapter-type none --device cpu
+
+# or evaluate on a supported card
+srun -p studentkillable --constraint=geforce_rtx_2080 --gpus=1 --pty \
+    python src/evaluate_peft.py --path ... --adapter-type none
+```
+
 If you instead see `UnpicklingError: Weights only load failed`, that is torch
 2.6+ refusing SuPar's checkpoint format: SuPar pickles a `Config` object and
 dill-pickles its whole transform into the `.pt` file, and `torch.load` now
