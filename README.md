@@ -65,6 +65,11 @@ conda create -n yiddish python=3.10 && conda activate yiddish
 pip install -r requirements.txt
 ```
 
+That is the local recipe. **On the TAU cluster there is no usable system conda**
+— you install Miniconda into your course storage first, and the environments
+have to be split in two because `ppchyprep` pins conflicting dependency
+versions. [RUNBOOK.md](RUNBOOK.md) Step 2 covers it.
+
 The parser is built on [SuPar](https://github.com/yzhangcs/parser) 1.1.4. Every
 adaptation is a **runtime patch**: no file under `supar/` is edited, and no
 original pipeline script is modified.

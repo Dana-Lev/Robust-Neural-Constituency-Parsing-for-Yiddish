@@ -34,9 +34,13 @@ aligns closely with Standard Yiddish Orthography.
 Romanized trees are converted to Hebrew script with Kulick's `ppchyprep`:
 
 ```bash
+# data/ is gitignored, so raw/ does not exist in a fresh clone
+mkdir -p yiddish_parser/data/raw
 cd yiddish_parser/data/raw
 git clone https://github.com/skulick/ppchyprep
-# follow ppchyprep's own instructions to produce out/data/json
+# ppchyprep needs two non-PyPI packages (yiddishycode, ppctree) and the corpus
+# at a pinned commit; run.sh also ships without its execute bit. RUNBOOK Step 3
+# has the exact sequence.
 ```
 
 Then, from `yiddish_parser/`:

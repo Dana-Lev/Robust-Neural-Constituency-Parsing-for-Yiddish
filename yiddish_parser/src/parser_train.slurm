@@ -15,7 +15,22 @@ export HF_HOME="$BASE_DIR/cache"
 export TORCH_HOME="$BASE_DIR/cache"
 export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True
 
-source "$BASE_DIR/anaconda3/etc/profile.d/conda.sh"
+# Find conda wherever it was installed under the storage dir. RUNBOOK Step 2
+# installs Miniconda to $NLP_STORAGE/miniconda3; anaconda3 is kept as a fallback.
+CONDA_SH=""
+for candidate in "$BASE_DIR/miniconda3" "$BASE_DIR/anaconda3" "$HOME/miniconda3"; do
+    if [ -f "$candidate/etc/profile.d/conda.sh" ]; then
+        CONDA_SH="$candidate/etc/profile.d/conda.sh"
+        break
+    fi
+done
+if [ -z "$CONDA_SH" ]; then
+    echo "ERROR: no conda found under $BASE_DIR (looked for miniconda3/ and anaconda3/)."
+    echo "Run RUNBOOK.md Step 2, or set NLP_STORAGE to the directory holding miniconda3."
+    exit 1
+fi
+echo "Using conda from $CONDA_SH"
+source "$CONDA_SH"
 conda activate yiddish
 
 mkdir -p logs

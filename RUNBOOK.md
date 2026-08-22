@@ -20,17 +20,18 @@ Conventions used below:
 3. Log in and confirm your storage exists.
 
 **Credentials.** There is no special cluster password: you log in with your own
-**TAU username and password** ("University Credentials", per the page above).
-The login host is `slurm-client.cs.tau.ac.il`, which routes you to one of
-`c-001`…`c-010`. Two things that block people on the first attempt:
+**TAU username and password** ("University Credentials", per the page above). The
+login host is `slurm-client.cs.tau.ac.il`, which routes you to one of
+`c-001`…`c-010`. Two things block people on the first attempt:
 
-- **Off campus?** CS servers are not reachable from outside the university.
-  Connect to the **TAU VPN** first.
-- **"Remote host key has changed"?** Expected, and it will recur. The pool name
-  routes you to one of `c-001`…`c-010`, each with a *different* host key, so a
-  single stored key breaks as soon as you land on another node. Clear the stale
-  entry with `ssh-keygen -R slurm-client.cs.tau.ac.il`, or fix it permanently by
-  trusting all ten at once (`known_hosts` accepts several keys per name):
+**Off campus?** CS servers are not reachable from outside the university.
+Connect to the TAU VPN (via **GlobalProtect**) first.
+
+**"Remote host key has changed"?** Expected, and it will recur. The pool name
+routes you to a different node each time, and each node has its own host key, so
+one stored key breaks as soon as you land elsewhere. Clear the stale entry with
+`ssh-keygen -R slurm-client.cs.tau.ac.il`, or fix it permanently by trusting all
+ten at once (`known_hosts` accepts several keys per name):
 
 ```bash
 ssh-keyscan -T 8 -t ed25519,rsa,ecdsa \
@@ -41,12 +42,12 @@ cat /tmp/slurm_keys >> ~/.ssh/known_hosts && sort -u ~/.ssh/known_hosts -o ~/.ss
 ```
 
 If the password itself is rejected, that is a TAU/CS account issue — contact the
-CS system team; it is not something any project document can supply.
+CS system team; no project document can supply it.
 
-A worthwhile `~/.ssh/config` block — the `User` line is the one people forget,
-and without it SSH sends your *local* username and fails before the password is
-even considered. `ControlMaster` means you type the password once and every
-later `ssh`/`scp` reuses that connection:
+A worthwhile `~/.ssh/config` block. The `User` line is the one people forget, and
+without it SSH sends your local username and fails before the password is even
+considered. `ControlMaster` means you type the password once and every later
+`ssh`/`scp` reuses that connection — run `mkdir -p ~/.ssh/controlmasters` first:
 
 ```
 Host slurm slurm-client.cs.tau.ac.il
@@ -60,10 +61,18 @@ Host slurm slurm-client.cs.tau.ac.il
   ServerAliveInterval 60
 ```
 
-(`mkdir -p ~/.ssh/controlmasters` first.) Then `ssh slurm` is enough.
+Then `ssh slurm` is enough.
+
+> **If a connection ever hangs forever**, a previous failed attempt left a dead
+> control socket behind and every later attempt waits on it. Clear it and retry
+> without multiplexing:
+> `rm -f ~/.ssh/controlmasters/* && ssh -o ControlMaster=no -o ConnectTimeout=10 slurm`
+
+**The shell.** If you log in and see a `>` prompt rather than `$`, you are in a C
+shell. Type `bash -l` to switch to a bash login shell before proceeding —
+everything below assumes bash.
 
 ```bash
-ssh <user>@slurm-client.cs.tau.ac.il
 export STORAGE=/home/morg/NLP_2526b/$USER
 mkdir -p "$STORAGE" && df -h "$STORAGE" && sinfo -p studentkillable
 ```
@@ -89,7 +98,9 @@ git clone https://github.com/Dana-Lev/Robust-Neural-Constituency-Parsing-for-Yid
 cd Robust-Neural-Constituency-Parsing-for-Yiddish
 ```
 
-Make the environment variables permanent so every future login and job inherits them:
+Make them permanent so every later login and every Slurm job inherits them. The
+last line puts conda on your `PATH` too, so you do not have to re-source it by
+hand in every new shell (add it after Step 2 has actually installed conda):
 
 ```bash
 cat >> ~/.bashrc <<'EOF'
@@ -97,6 +108,7 @@ export STORAGE=/home/morg/NLP_2526b/$USER
 export NLP_STORAGE="$STORAGE"
 export HF_HOME="$STORAGE/cache"
 export TORCH_HOME="$STORAGE/cache"
+[ -f "$STORAGE/miniconda3/etc/profile.d/conda.sh" ] && source "$STORAGE/miniconda3/etc/profile.d/conda.sh"
 EOF
 ```
 
@@ -104,52 +116,76 @@ EOF
 
 ---
 
-## Step 2 — Two conda environments
+## Step 2 — Install Miniconda, then create the environments
 
-Two, deliberately: `ppchyprep` pins old `numpy`/`scikit-learn`/`yiddish` versions
-that clash with the parser stack. Keeping them apart avoids a dependency fight.
+There is no usable system conda: the compute nodes have no environment modules
+and no working `ensurepip`, so install your own Miniconda into persistent storage.
 
 ```bash
-# Parser + LLM baseline environment
+# 1. Miniconda, into your persistent storage
+cd "$STORAGE"
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
+bash miniconda.sh -b -p "$STORAGE/miniconda3"
+
+# 2. Activate it
+source "$STORAGE/miniconda3/bin/activate"
+
+# 3. Accept the Anaconda channel terms (required on first use, or env creation fails)
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+
+# 4. Parser + LLM baseline environment
 conda create -y -n yiddish python=3.10
 conda activate yiddish
-pip install -r requirements.txt
+pip install -r "$NLP_STORAGE/Robust-Neural-Constituency-Parsing-for-Yiddish/requirements.txt"
 python -c "import supar, torch, peft, transformers; print(supar.__version__, torch.__version__)"
 
-# Data-preparation environment
+# 5. Data-preparation environment, kept separate on purpose: ppchyprep pins old
+#    numpy / scikit-learn / yiddish versions that clash with the parser stack
+conda deactivate
 conda create -y -n ppchyprep python=3.10
 ```
 
-**Check:** the first `python -c` prints `1.1.4` and a torch version without error.
+**Check:** that `python -c` prints `1.1.4` and a torch version, with no import error.
+
+> Every new shell needs conda on its `PATH` again — either re-run
+> `source "$STORAGE/miniconda3/bin/activate"`, or add the line from Step 1 to
+> `~/.bashrc` once and forget about it. The Slurm job scripts in this repo find
+> conda under `$NLP_STORAGE` themselves.
 
 ---
 
 ## Step 3 — Build the PPCHY treebank with `ppchyprep`
 
 This converts the romanized PPCHY trees into Hebrew script. It is Kulick's own
-tool, so the conversion matches the published setup.
+tool, so the conversion matches the published setup. Note the `mkdir` — `data/`
+is gitignored, so the directory does not exist in a fresh clone.
 
 ```bash
+source "$STORAGE/miniconda3/bin/activate"
 conda activate ppchyprep
+
+mkdir -p "$NLP_STORAGE/Robust-Neural-Constituency-Parsing-for-Yiddish/yiddish_parser/data/raw"
 cd "$NLP_STORAGE/Robust-Neural-Constituency-Parsing-for-Yiddish/yiddish_parser/data/raw"
 
-# Two dependencies that are not on PyPI
+# two dependencies that are not on PyPI
 git clone https://github.com/skulick/yiddishycode.git && pip install ./yiddishycode
 git clone https://github.com/skulick/ppctree.git      && pip install ./ppctree
 
-# The tool itself
+# the tool itself
 git clone https://github.com/skulick/ppchyprep.git
 cd ppchyprep
 pip install -r requirements.txt
 
-# The corpus, at the exact commit ppchyprep expects
+# the corpus, at the exact commit ppchyprep expects
 mkdir -p data && cd data
 git clone https://github.com/beatrice57/penn-parsed-corpus-of-historical-yiddish.git
 cd penn-parsed-corpus-of-historical-yiddish
 git checkout 3cedddb2fa11b6873e92dbd043e29df39c8612e6
 cd ../..
 
-# Produces ./out, including out/data/json
+# run.sh ships without the execute bit; produces ./out, including out/data/json
+chmod +x run.sh
 ./run.sh
 ```
 
@@ -159,7 +195,7 @@ cd ../..
 ls out/data/json/*.json | wc -l      # should be non-zero
 ```
 
-If `pp_psd.sh` fails at the end of `run.sh`, that is fine — it runs *after*
+If `pp_psd.sh` fails at the very end of `run.sh`, that is fine — it runs *after*
 `make_json.py`, so the JSON you need already exists.
 
 ---
