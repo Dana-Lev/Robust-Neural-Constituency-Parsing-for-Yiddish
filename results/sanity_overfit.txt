@@ -1,0 +1,82 @@
+==================================================================
+MODE: baseline
+  subword regularization : False
+  language adapters      : False
+  encoder                : skulick/xlmb-ybc-ck05
+  output                 : ./output/sanity_overfit/yiddish_parser.pt
+==================================================================
+[baseline] full-backbone freeze patch applied.
+   -> Building Parser instance...
+[adapters] froze 278.04M backbone parameters (input embeddings: 192,001,536 = 192.0M)
+
+==================================================================
+TRAINABLE PARAMETER BREAKDOWN
+==================================================================
+  parser head                               2,693,249  ( 82.0%)
+  scalar mix / projection                     589,829  ( 18.0%)
+------------------------------------------------------------------
+  trainable                                 3,283,078
+  total                                   281,326,726
+  trainable fraction                           1.167%
+==================================================================
+
+    encoder.scalar_mix.weights                                          4
+    encoder.scalar_mix.gamma                                            1
+    encoder.projection.weight                                     589,824
+    span_mlp_l.linear.weight                                      384,000
+    span_mlp_l.linear.bias                                            500
+    span_mlp_r.linear.weight                                      384,000
+    span_mlp_r.linear.bias                                            500
+    label_mlp_l.linear.weight                                      76,800
+    label_mlp_l.linear.bias                                           100
+    label_mlp_r.linear.weight                                      76,800
+    label_mlp_r.linear.bias                                           100
+    span_attn.weight                                              250,500
+    label_attn.weight                                           1,519,949
+
+[adapters] patched transformers.AdamW (adapter_lr=5e-05)
+   -> Starting Training Loop...
+2026-08-22 11:34:13 INFO Loading the data
+2026-08-22 11:34:22 INFO 
+train: Dataset(n_sentences=100, n_batches=25, n_buckets=25)
+dev:   Dataset(n_sentences=100, n_batches=25, n_buckets=25)
+test:  Dataset(n_sentences=100, n_batches=25, n_buckets=25)
+
+[adapters] optimizer: 0 adapter params @ lr=5e-05, 3,283,078 head/mix params at SuPar's rates, 278,043,648 frozen params excluded
+2026-08-22 11:34:22 INFO Epoch 1 / 40:
+2026-08-22 11:40:47 INFO lr: 1.2500e-05 - loss: 4.8505
+2026-08-22 11:42:24 INFO dev:  loss: 4.3056 - UCM:  0.00% LCM:  0.00% UP:  0.00% UR:  0.00% UF:  0.00% LP:  0.00% LR:  0.00% LF:  0.00%
+2026-08-22 11:44:00 INFO test: loss: 4.3056 - UCM:  0.00% LCM:  0.00% UP:  0.00% UR:  0.00% UF:  0.00% LP:  0.00% LR:  0.00% LF:  0.00%
+2026-08-22 11:44:00 INFO 0:09:37.706568s elapsed
+
+2026-08-22 11:44:00 INFO Epoch 2 / 40:
+2026-08-22 11:46:48 INFO lr: 2.5000e-05 - loss: 4.8594
+2026-08-22 11:48:16 INFO dev:  loss: 4.0043 - UCM:  3.00% LCM:  0.00% UP: 98.18% UR:  8.01% UF: 14.81% LP: 72.73% LR:  5.93% LF: 10.97%
+2026-08-22 11:50:47 INFO test: loss: 4.0043 - UCM:  3.00% LCM:  0.00% UP: 98.18% UR:  8.01% UF: 14.81% LP: 72.73% LR:  5.93% LF: 10.97%
+2026-08-22 11:51:19 INFO 0:06:47.149791s elapsed (saved)
+
+2026-08-22 11:51:19 INFO Epoch 3 / 40:
+2026-08-22 11:58:52 INFO lr: 3.7500e-05 - loss: 4.8257
+2026-08-22 12:01:46 INFO dev:  loss: 3.5616 - UCM:  0.00% LCM:  0.00% UP: 100.00% UR:  2.23% UF:  4.35% LP: 80.00% LR:  1.78% LF:  3.48%
+2026-08-22 12:04:34 INFO test: loss: 3.5616 - UCM:  0.00% LCM:  0.00% UP: 100.00% UR:  2.23% UF:  4.35% LP: 80.00% LR:  1.78% LF:  3.48%
+2026-08-22 12:04:34 INFO 0:13:15.222053s elapsed
+
+2026-08-22 12:04:34 INFO Epoch 4 / 40:
+2026-08-22 12:07:19 INFO lr: 5.0000e-05 - loss: 5.1269
+2026-08-22 12:08:52 INFO dev:  loss: 3.4216 - UCM:  2.00% LCM:  2.00% UP: 49.40% UR: 42.88% UF: 45.91% LP: 24.44% LR: 21.22% LF: 22.72%
+2026-08-22 12:10:29 INFO test: loss: 3.4216 - UCM:  2.00% LCM:  2.00% UP: 49.40% UR: 42.88% UF: 45.91% LP: 24.44% LR: 21.22% LF: 22.72%
+2026-08-22 12:10:43 INFO 0:05:55.010601s elapsed (saved)
+
+2026-08-22 12:10:43 INFO Epoch 5 / 40:
+2026-08-22 12:13:44 INFO lr: 4.8611e-05 - loss: 3.6018
+2026-08-22 12:16:16 INFO dev:  loss: 2.9488 - UCM: 10.00% LCM:  4.00% UP: 60.97% UR: 46.59% UF: 52.82% LP: 38.45% LR: 29.38% LF: 33.31%
+2026-08-22 12:16:46 INFO test: loss: 2.9488 - UCM: 10.00% LCM:  4.00% UP: 60.97% UR: 46.59% UF: 52.82% LP: 38.45% LR: 29.38% LF: 33.31%
+2026-08-22 12:17:27 INFO 0:06:03.316894s elapsed (saved)
+
+2026-08-22 12:17:27 INFO Epoch 6 / 40:
+2026-08-22 12:22:08 INFO lr: 4.7222e-05 - loss: 3.2031
+2026-08-22 12:24:48 INFO dev:  loss: 2.9223 - UCM:  8.00% LCM:  4.00% UP: 56.99% UR: 40.50% UF: 47.35% LP: 39.25% LR: 27.89% LF: 32.61%
+2026-08-22 12:26:16 INFO test: loss: 2.9223 - UCM:  8.00% LCM:  4.00% UP: 56.99% UR: 40.50% UF: 47.35% LP: 39.25% LR: 27.89% LF: 32.61%
+2026-08-22 12:26:16 INFO 0:08:48.776939s elapsed
+
+2026-08-22 12:26:16 INFO Epoch 7 / 40:
