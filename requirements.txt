@@ -2,7 +2,12 @@
 # subword_regularization.py and language_adapters.py is written against the
 # internals of this exact version (see PEFT_INTEGRATION.md).
 supar==1.1.4
-torch>=1.13
+# torch: the wheel's CUDA version must not exceed the cluster's driver. The TAU
+# nodes report CUDA 12.9, so a default `pip install torch` (which currently
+# pulls a cu130 build) initialises on CPU with only a warning -- ~100x slower.
+# Install a cu12x build explicitly:
+#   pip install --force-reinstall torch --index-url https://download.pytorch.org/whl/cu128
+torch>=2.0
 transformers>=4.30
 peft>=0.7.0
 sentencepiece>=0.1.99

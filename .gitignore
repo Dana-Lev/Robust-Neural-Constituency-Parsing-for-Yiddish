@@ -61,6 +61,10 @@ Thumbs.db
 !results/*.txt
 !results/*.json
 
+# Conda installer downloaded during setup (197MB)
+miniconda.sh
+Miniconda3-*.sh
+
 # --- Local scratch ---
 scratch/
 tmp/

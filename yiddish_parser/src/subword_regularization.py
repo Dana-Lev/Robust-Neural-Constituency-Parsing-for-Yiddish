@@ -196,6 +196,18 @@ class StochasticSubwordTokenizer:
         if self._sp is not None and self.backend != "maxmatch":
             self._resolved_backend = "spm"
         else:
+            if self.backend == "spm":
+                # Do NOT fall through to maxmatch here. Reporting a "Kudo
+                # sampling" cell that actually ran stochastic longest-match
+                # would duplicate the maxmatch cell under a different name.
+                raise RuntimeError(
+                    "backend='spm' requested but no SentencePiece model is reachable "
+                    f"for {self.model_name_or_path}. Recent transformers releases drop "
+                    "the slow tokenizer that exposes .sp_model, and the checkpoint "
+                    "ships no sentencepiece.bpe.model. Either place that file next to "
+                    "the model and pass a local path, or run --backend maxmatch and say "
+                    "in the write-up that Kudo lattice sampling could not be evaluated."
+                )
             self._resolved_backend = "maxmatch"
             self._build_piece_index()
 
