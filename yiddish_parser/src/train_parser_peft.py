@@ -125,6 +125,10 @@ def parse_args():
                         "no 'scalar_mix' pooling: layer mixing is separate and always on). "
                         "'mean' matches the repo's train_parser.py.")
     p.add_argument("--seed", type=int, default=1)
+    p.add_argument("--allow-cpu", action="store_true",
+                   help="Train without a GPU. Refused by default: a silent CPU "
+                        "fallback runs roughly 100x slower, which looks like a "
+                        "hung job rather than a misconfigured one.")
     return p.parse_args()
 
 
@@ -185,6 +189,46 @@ def run_selftest(args):
               f"but fix_len={args.fix_len}; raise --fix-len to avoid silent truncation.\n")
 
 
+def describe_device(args) -> str:
+    """Report the device, and refuse to crawl on CPU unless asked to.
+
+    A frozen XLM-R over 100 short sentences is seconds per epoch on a GPU and
+    minutes per epoch on CPU. Falling back silently turns a missing --gpus
+    allocation into what looks like a hung job, so make it loud and stop.
+    """
+    slurm = os.environ.get("SLURM_JOB_ID")
+    print("-" * 66)
+    if torch.cuda.is_available():
+        count = torch.cuda.device_count()
+        name = torch.cuda.get_device_name(0)
+        total = torch.cuda.get_device_properties(0).total_memory / 1e9
+        print(f"DEVICE: cuda  ({count} visible, {name}, {total:.1f} GB)")
+        if slurm:
+            print(f"        Slurm job {slurm}")
+        print("-" * 66)
+        return "cuda"
+
+    print("DEVICE: cpu  -- NO GPU VISIBLE")
+    print(f"        torch {torch.__version__}, "
+          f"CUDA build: {torch.version.cuda or 'none (CPU-only wheel)'}")
+    print(f"        SLURM_JOB_ID: {slurm or 'unset -- not inside a Slurm allocation'}")
+    print("-" * 66)
+    if not args.allow_cpu:
+        print("Refusing to train on CPU: expect ~100x slower steps, i.e. hours per")
+        print("epoch instead of seconds, which is indistinguishable from a hang.")
+        print("")
+        print("  * running interactively? wrap it in an allocation:")
+        print("      srun -p studentkillable --gpus=1 --time=1:00:00 --mem=32G --pty \\")
+        print("          python src/train_parser_peft.py ...")
+        print("  * submitting a job? use sbatch src/parser_train_peft.slurm")
+        print("  * torch built without CUDA? reinstall inside the env:")
+        print("      pip install --force-reinstall torch")
+        print("  * really want CPU (tiny smoke test only)? pass --allow-cpu")
+        raise SystemExit(2)
+    print("Continuing on CPU because --allow-cpu was given. Expect this to be slow.")
+    return "cpu"
+
+
 def train(args):
     output_dir = resolve_output_dir(args)
     os.makedirs(output_dir, exist_ok=True)
@@ -203,6 +247,7 @@ def train(args):
     print("=" * 66)
 
     set_seed(args.seed)
+    device = describe_device(args)
 
     # --- STEP 1: Approach 1. Patch Dataset.build BEFORE any Dataset is created,
     #     so the training loader gets the stochastic collator.
@@ -319,7 +364,7 @@ def build_supar_args(args, model_file):
         "equal": {"ADVP": "PRT"},
 
         # 6. System
-        "device": "cuda" if torch.cuda.is_available() else "cpu",
+        "device": "cuda" if torch.cuda.is_available() else "cpu",  # see describe_device()
         "seed": args.seed,
         "amp": False,
         "cache": False,
