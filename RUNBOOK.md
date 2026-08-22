@@ -308,8 +308,39 @@ srun -p studentkillable --gpus=1 --time=1:00:00 --mem=32G --pty \
         --epochs 40 --patience 40 2>&1 | tee ../results/sanity_overfit.txt
 ```
 
-**Check:** F1 climbs toward ~100 on this tiny set. If it plateaus low, stop and
-debug — do not launch the grid.
+**Check:** the run starts by printing its device. You want
+
+```
+DEVICE: cuda  (1 visible, NVIDIA ..., 12.0 GB)
+```
+
+If it prints `DEVICE: cpu -- NO GPU VISIBLE` the script now stops rather than
+crawling. A frozen XLM-R over 100 short sentences takes **seconds** per epoch on
+a GPU and **6-13 minutes** on CPU, which looks exactly like a hung job. Causes,
+in order of likelihood:
+
+- the command was run directly on the login node, with no allocation — wrap it in
+  `srun ... --gpus=1` as above, or use `sbatch`;
+- the allocation had no GPU (`--gpus=1` missing);
+- torch is a CPU-only wheel — check with
+  `python -c "import torch; print(torch.__version__, torch.version.cuda)"`; if
+  `cuda` prints `None`, reinstall it inside the env.
+
+Then: F1 should climb toward ~100 on this tiny set. Early epochs legitimately
+look terrible (LF near 0, then ~11, then ~33) — that is warmup, not failure. If
+it plateaus low after ~20 epochs, stop and debug before launching the grid.
+
+**If nothing has printed for a long time**, check the job is alive rather than
+waiting on it — `studentkillable` jobs are preempted without warning:
+
+```bash
+squeue -u $USER                 # still queued or running?
+sacct -u $USER --format=JobID,JobName,State,Elapsed,ExitCode -S today
+nvidia-smi                      # inside the allocation: anything on the GPU?
+```
+
+An empty `squeue` plus no final line in the log means the job was killed, not
+that it is still thinking.
 
 ---
 
