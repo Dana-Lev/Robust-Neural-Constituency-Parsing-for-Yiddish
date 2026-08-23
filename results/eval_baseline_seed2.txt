@@ -1,0 +1,41 @@
+[compat] torch.load: weights_only=False for SuPar checkpoints (torch 2.11.0+cu128)
+[device] cpu (requested)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/197 [00:00<?, ?it/s]Loading weights: 100%|██████████| 197/197 [00:00<00:00, 15204.02it/s]
+[transformers] [1mXLMRobertaModel LOAD REPORT[0m from: skulick/xlmb-ybc-ck05
+Key                       | Status     | 
+--------------------------+------------+-
+lm_head.bias              | UNEXPECTED | 
+lm_head.layer_norm.weight | UNEXPECTED | 
+lm_head.dense.bias        | UNEXPECTED | 
+lm_head.dense.weight      | UNEXPECTED | 
+lm_head.layer_norm.bias   | UNEXPECTED | 
+pooler.dense.bias         | MISSING    | 
+pooler.dense.weight       | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+2026-08-23 13:17:18 INFO Loading the data
+  0%|                  | 0/856 00:00<?, ?it/s 75%|#############4    | 641/856 00:00<00:00, 6405.65it/s                                                           0%|                  | 0/856 00:00<?, ?it/s/home/morg/NLP_2526b/danalev/miniconda3/envs/yiddish/lib/python3.10/site-packages/supar/utils/fn.py:155: UserWarning: Using a non-tuple sequence for multidimensional indexing is deprecated and will be changed in pytorch 2.9; use x[tuple(seq)] instead of x[seq]. In pytorch 2.9 this will be interpreted as tensor index, x[torch.tensor(seq)], which will result either in an error or a different result (Triggered internally at /pytorch/torch/csrc/autograd/python_variable_indexing.cpp:347.)
+  out_tensor[i][[slice(-i, None) if padding_side == 'left' else slice(0, i) for i in tensor.size()]] = tensor
+ 14%|##6               | 124/856 00:00<00:00, 1238.50it/s 31%|#####5            | 263/856 00:00<00:00, 1327.33it/s 46%|########3         | 397/856 00:00<00:00, 1332.19it/s 62%|###########1      | 531/856 00:00<00:00, 1298.68it/s 78%|##############1   | 671/856 00:00<00:00, 1331.20it/s 94%|################9 | 808/856 00:00<00:00, 1342.53it/s                                                         2026-08-23 13:17:19 INFO 
+Dataset(n_sentences=856, n_batches=8, n_buckets=8)
+2026-08-23 13:17:19 INFO Evaluating the dataset
+2026-08-23 13:17:37 INFO loss: 1.1951 - UCM: 44.74% LCM: 31.66% UP: 86.08% UR: 85.04% UF: 85.55% LP: 75.13% LR: 74.22% LF: 74.67%
+2026-08-23 13:17:37 INFO 0:00:18.263771s elapsed, 46.87 Sents/s
+
+==================================================================
+EVALUATION: parser_baseline_seed2  on  data/processed/supar_ready/test.txt
+==================================================================
+  loss            1.1951
+  metric          UCM: 44.74% LCM: 31.66% UP: 86.08% UR: 85.04% UF: 85.55% LP: 75.13% LR: 74.22% LF: 74.67%
+  Labelled Precision          75.13
+  Labelled Recall             74.22
+  Labelled F1                 74.67
+  Unlabelled Precision        86.08
+  Unlabelled Recall           85.04
+  Unlabelled F1               85.55
+  Labelled Complete Match     31.66
+  Unlabelled Complete Match   44.74
+==================================================================
