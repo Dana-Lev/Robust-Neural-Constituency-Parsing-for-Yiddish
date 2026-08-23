@@ -52,25 +52,23 @@ Multilingual encoders fragment Yiddish aggressively, and \citet{kulick-etal-2022
 identified this ``tokenization tax'' as an obstacle to building the syntactic
 tools the language lacks. The established remedy is static --- inject clean
 in-language vocabulary and consolidate it with continued pre-training --- which
-rewrites the embedding matrix and presumes the problem lives there. We ask
-whether the bottleneck yields instead to \emph{dynamic}, parameter-efficient
-adaptation: stochastic subword re-segmentation during training, and MAD-X-style
-language adapters over a fully frozen encoder, neither of which modifies the
-vocabulary or requires pre-training. Training only
-$11.9$M of $289.9$M parameters ($4.1\%$), we compare both against a frozen-encoder
-baseline on the Penn Parsed Corpus of Historical Yiddish. The two diverge
-sharply: resampling segmentation moves labeled F1 by $+0.43$ points, which is
-inside our measured seed-to-seed variation, while
-adapters move it by $+7.1$, two architecturally unrelated adapter families land
-within $0.07$ F1 of each other for under $0.9$M trainable parameters and no
-pre-training, and combining both interventions is slightly worse than adapters
-alone. The bottleneck is therefore not how Yiddish words are split but that
-the encoder is not permitted to adapt. We additionally test whether
-the problem is already solved by general-purpose models: across two model tiers
-and matched zero-/few-shot conditions, the best frontier configuration reaches
-$55.4$ labeled F1 against our parser's $74.9$, and we show that most of the
-apparent benefit of in-context examples is improved instruction-following rather
-than improved parsing.
+rewrites the embedding matrix and presumes the problem lives there. We ask whether
+the bottleneck yields instead to \emph{dynamic}, parameter-efficient adaptation:
+stochastic subword re-segmentation during training, and MAD-X-style language
+adapters over a fully frozen encoder, neither of which touches the vocabulary or
+requires pre-training. Training $11.9$M of $289.9$M parameters ($4.1\%$), we
+compare both against a frozen-encoder baseline on the Penn Parsed Corpus of
+Historical Yiddish. They diverge sharply: resampling segmentation moves labeled F1
+by $+0.43$, inside our measured seed-to-seed variation, while adapters move it by
+$+7.1$ --- two architecturally unrelated adapter families landing within $0.07$ F1
+of each other for under $0.9$M parameters --- and combining both is slightly worse
+than adapters alone. The bottleneck is therefore not how Yiddish words are split
+but that the encoder is not permitted to adapt. We additionally test whether
+general-purpose models already solve the problem: across two model tiers and
+matched zero-/few-shot conditions the best frontier configuration reaches $55.4$
+labeled F1 against our parser's $74.9$, and most of the apparent benefit of
+in-context examples is improved instruction-following rather than improved
+parsing.
 \end{abstract}
 
 % =====================================================================
@@ -80,20 +78,19 @@ Yiddish is a low-resource language with a thousand years of orthographic
 instability behind it. Its computational treatment took a decisive step with
 \citet{kulick-etal-2022-part}, who built the first robust part-of-speech tagger
 for the language and showed that embeddings trained on the noisy, OCR-derived
-Yiddish Book Center corpus implicitly absorb historical spelling variation,
-removing the need for manual standardisation. That work also named what it could
+Yiddish Book Center corpus absorb historical spelling variation without manual
+standardisation. That work also named what it could
 not do: a syntactic parser, whose ``greater complexity'' makes the demand for
 gold-standard data and careful modelling ``correspondingly more pressing''.
 
 One obstacle it identified is mundane but consequential. Multilingual subword
 vocabularies were not built for Hebrew-script Yiddish, so words shatter into many
-pieces --- in our data, an average of $2.05$ pieces per word under XLM-R
+pieces --- in our data, $2.05$ pieces per word under XLM-R
 \citep{conneau-etal-2020-unsupervised}. The established remedy is \emph{static}:
-extract clean in-language vocabulary, inject it into the embedding matrix with a
-method such as FOCUS \citep{dobler-de-melo-2023-focus}, and consolidate the new
-tokens with continued pre-training. This works, but it is expensive --- it rewrites
-the embedding matrix and requires a pre-training run --- and it presumes that the
-fragmentation problem lives in the vocabulary.
+inject clean in-language vocabulary into the embedding matrix with a method such
+as FOCUS \citep{dobler-de-melo-2023-focus} and consolidate it with continued
+pre-training. That works, but it rewrites the embedding matrix, requires a
+pre-training run, and presumes the problem lives in the vocabulary.
 
 This paper asks whether \emph{dynamic} interventions address fragmentation at a
 fraction of that cost, and whether they help constituency parsing at all. We
@@ -113,8 +110,7 @@ bottleneck adapters.
 
 A project begun in 2026 from a problem statement written in 2022 also owes an
 answer to an obvious objection: perhaps a general-purpose model already parses
-historical Yiddish, and a dedicated parser is beside the point. We test this
-directly rather than assuming either answer, prompting two tiers of a current
+historical Yiddish. We test this directly, prompting two tiers of a current
 frontier model family under matched zero-shot and few-shot conditions.
 
 Our contributions are:
@@ -130,10 +126,10 @@ agreeing to $0.07$ F1, at under $0.9$M trainable parameters and no pre-training.
 \item A frontier-LLM control on the same test data and the same metric, showing a
 gap of $26.7$ labeled F1 to our best parser --- so the parsing problem is not
 dissolved by scale.
-\item A measurement result with wider relevance: on this task, in-context
-examples improve \emph{token fidelity} far more than parse quality, and an
-evaluation that reports only F1 cannot tell a model that cannot parse from one
-that ignored the output contract.
+\item A measurement result with wider relevance: in-context examples improve
+\emph{token fidelity} far more than parse quality, so an evaluation reporting only
+F1 cannot tell a model that cannot parse from one that ignored the output
+contract.
 \end{itemize}
 
 \section{Background and Related Work}
@@ -141,12 +137,11 @@ that ignored the output contract.
 \subsection{Yiddish NLP and the PPCHY}
 
 \citet{kulick-etal-2022-part} established the modern baseline for Yiddish
-computational work. Their tagger was trained on the Penn Parsed Corpus of
-Historical Yiddish (PPCHY), a member of the ``Penn family'' of historical
-treebanks that shares its annotation philosophy with the Penn Treebank and the
-Icelandic Parsed Historical Corpus. PPCHY provides roughly $200$K words of
-gold-standard trees spanning the fifteenth to twentieth centuries, annotated with
-part-of-speech tags and phrase structure.
+computational work. Their tagger was trained on the Penn Parsed Corpus of Historical Yiddish
+(PPCHY), a member of the ``Penn family'' of historical treebanks that shares its
+annotation philosophy with the Penn Treebank and the Icelandic Parsed Historical
+Corpus. PPCHY provides roughly $200$K words of gold-standard trees spanning the
+fifteenth to twentieth centuries.
 
 Two properties of the annotation matter for what follows. First, labels encode
 \emph{function} as well as category: a subject noun phrase is \textsc{np-sbj}, a
@@ -165,14 +160,14 @@ well-served ones. The result is high \emph{fertility} --- subword pieces per wor
 --- which dilutes each word's representation across many pieces and pushes
 word-level syntactic signal into the model's composition behaviour.
 
-Remedies split into two families. \emph{Static} approaches change the vocabulary:
-FOCUS \citep{dobler-de-melo-2023-focus} initialises newly added tokens as
-weighted combinations of semantically similar existing ones, so that new
-vocabulary starts life inside the model's latent space rather than at random.
-Clean in-language text for such an injection is now available for Yiddish through
-the Jochre corpus \citep{urieli-2025-jochre}. The cost, however, is a rewritten
-embedding matrix plus a pre-training run, and the benefit is predicated on
-fragmentation being an embedding-level problem.
+Remedies split into two families. \emph{Static} approaches change the
+vocabulary: FOCUS \citep{dobler-de-melo-2023-focus} initialises added tokens as
+weighted combinations of semantically similar existing ones, so new vocabulary
+starts inside the model's latent space rather than at random, and clean
+in-language text for such an injection now exists for Yiddish in the Jochre corpus
+\citep{urieli-2025-jochre}. The cost is a rewritten embedding matrix plus a
+pre-training run, and the benefit presumes fragmentation is an embedding-level
+problem.
 
 \emph{Dynamic} approaches leave the vocabulary alone and vary the segmentation
 instead. \citet{kudo-2018-subword} samples segmentations from a unigram lattice
@@ -188,13 +183,12 @@ paper occupies.
 
 Adapters \citep{houlsby-etal-2019-parameter} insert small trainable bottlenecks
 between frozen transformer layers, reaching full fine-tuning quality while
-training a small fraction of the parameters. MAD-X
-\citep{pfeiffer-etal-2020-mad} organises them into \emph{language} and
-\emph{task} adapters so that a frozen multilingual encoder can be specialised to
-an unseen language, and it is the closest prior framing to our problem: adapting a
-multilingual model to Yiddish without retraining it. LoRA
-\citep{hu-etal-2022-lora} instead learns low-rank updates to existing weight
-matrices, adding no inference-time depth once merged.
+training a fraction of the parameters. MAD-X \citep{pfeiffer-etal-2020-mad}
+organises them into \emph{language} and \emph{task} adapters so a frozen
+multilingual encoder can be specialised to an unseen language --- the closest
+prior framing to our problem. LoRA \citep{hu-etal-2022-lora} instead learns
+low-rank updates to existing weight matrices, adding no inference-time depth once
+merged.
 
 Beyond efficiency, this family is attractive here for a scientific reason. If a
 frozen encoder plus a small adapter recovers whatever a vocabulary rewrite
@@ -204,11 +198,11 @@ recovers, then the fragmentation problem was never about the embedding matrix.
 
 We build on the CRF constituency parser of \citet{zhang-etal-2020-fast}, as
 implemented in SuPar. It is a \emph{chart-based} parser: it scores every span with
-a biaffine attention layer over span-boundary representations, and decodes with
-CKY, optionally using minimum-Bayes-risk decoding over marginals. There is no
-transition system, action sequence, or stack. Both of our interventions are
-agnostic to the decoder --- they alter the input segmentation and the encoder,
-never the chart --- which is what makes the comparison between them clean.
+a biaffine attention layer over span-boundary representations and decodes with
+CKY, optionally using minimum-Bayes-risk decoding over marginals. Both of our
+interventions are agnostic to the decoder --- they alter the input segmentation
+and the encoder, never the chart --- which is what makes the comparison between
+them clean.
 
 \section{Methodology}
 % Rubric: methodology is 20pt -- data, baselines, no leakage, seeds.
@@ -220,88 +214,39 @@ romanized form into Hebrew script with the \texttt{ppchyprep} utility of
 \citet{kulick-etal-2022-part}, so that the conversion matches their published
 setup. Trees are normalised under a single \textsc{top} root, split 90/5/5 with
 a fixed seed, and filtered for structures the parser cannot consume.
-Table~\ref{tab:data} reports the resulting statistics.
+This yields $15{,}394$ / $855$ / $856$ trees ($190{,}007$ tokens, mean length
+$11.1$) and $226$ distinct labels once co-indexation suffixes are stripped ($402$
+with them); no tree was rejected by the cleaning step, and the label inventory is
+dominated by \textsc{np-sbj} ($19{,}565$), \textsc{np} ($14{,}749$) and
+\textsc{ip-mat} ($14{,}164$). Appendix~\ref{app:data} gives the full breakdown.
 
 We retain \emph{all} PPCHY components rather than restricting to the two largest
-20th-century texts. This is deliberate: the older material carries the greatest
-orthographic variation, and therefore the heaviest subword fragmentation, which
-is precisely the phenomenon under test here. Restricting to the cleaner
-twentieth-century material would remove much of the orthographic variation whose
-effect we are trying to measure, so we keep the corpus whole and report the
-resulting statistics rather than a subset's.
-\todo{Optional: add one romanized example tree as a PDF figure.}
+20th-century texts. The older material carries the greatest orthographic
+variation, and therefore the heaviest subword fragmentation --- precisely the
+phenomenon under test --- so restricting to the cleaner twentieth-century
+material would remove much of the effect we are trying to measure.
 
-\begin{table}[t]
-\centering
-\small
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}lrrr@{}}
-\toprule
-\textbf{Split} & \textbf{Sent.} & \textbf{Tokens} & \textbf{Mean len.} \\
-\midrule
-Train & 15{,}394 & 171{,}065 & 11.1 \\
-Dev   &     855  &   9{,}323 & 10.9 \\
-Test  &     856  &   9{,}619 & 11.2 \\
-\midrule
-Total & 17{,}105 & 190{,}007 & 11.1 \\
-\bottomrule
-\end{tabular}
-\caption{PPCHY data statistics for our SuPar-ready splits (all corpus
-components, 90/5/5 split, seed 42). No tree was rejected by the cleaning step.
-The treebank uses 226 distinct constituent labels once co-indexation suffixes are
-stripped (402 with them); the most frequent are \textsc{np-sbj} (19{,}565),
-\textsc{np} (14{,}749) and \textsc{ip-mat} (14{,}164).}
-\label{tab:data}
-\end{table}
 
 \subsection{Base Parser}
 
-All cells share one architecture, so that differences between them are
-attributable to the intervention rather than to capacity. The encoder is
-\texttt{skulick/xlmb-ybc-ck05}, an XLM-R model already pre-trained by
+All cells share one architecture, so differences between them are attributable
+to the intervention rather than to capacity. The encoder is
+\texttt{skulick/xlmb-ybc-ck05}, an XLM-R model pre-trained by
 \citet{kulick-etal-2022-part} on the Yiddish Book Center corpus
-\citep{ybc-2023}, and it is \emph{entirely frozen}: all $278.0$M backbone parameters, including the
-$250002 \times 768 = 192{,}001{,}536$ input embedding matrix. Trainable
-parameters are the span and label MLPs, the biaffine attention scorers, and
-SuPar's scalar mix over encoder layers --- $11{,}862{,}119$ in total, or
-$4.09\%$ of the $289.9$M-parameter model (Table~\ref{tab:params}). The training log prints
-this breakdown on every run, and the optimizer excludes frozen parameters
-explicitly rather than relying on gradients being zero.
+\citep{ybc-2023}, and it is \emph{entirely frozen} --- all $278.0$M backbone
+parameters, including the $192$M input embedding matrix. Trainable parameters are
+the span and label MLPs, the biaffine scorers and SuPar's scalar mix over encoder
+layers: $11{,}862{,}119$, or $4.09\%$ of the $289.9$M-parameter model
+(Appendix~\ref{app:data}). The training log prints this breakdown every run, and
+the optimizer excludes frozen parameters explicitly rather than relying on
+gradients being zero.
 
-\begin{table}[t]
-\centering
-\small
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}lrr@{}}
-\toprule
-\textbf{Component} & \textbf{Params} & \textbf{\%} \\
-\midrule
-Parser head                  & 11{,}272{,}290 & 3.89 \\
-\quad of which label biaffine & 10{,}098{,}990 & 3.48 \\
-Scalar mix + projection      &     589{,}829 & 0.20 \\
-\midrule
-\textbf{Trainable}           & \textbf{11{,}862{,}119} & \textbf{4.09} \\
-Frozen backbone              & 278{,}043{,}648 & 95.91 \\
-\quad of which embeddings    & 192{,}001{,}536 & 66.23 \\
-\midrule
-Total                        & 289{,}905{,}767 & 100.0 \\
-\bottomrule
-\end{tabular}
-\caption{Parameter budget, identical across cells except for the adapter
-parameters each one adds (Section~\ref{sec:adapters}). Percentages of the total.
-Note that the label biaffine scorer dominates the trainable budget because it
-scales with the label inventory, and PPCHY's function-tagged labels are numerous
-(226 in our splits, Section~\ref{sec:data}); a category-only treebank would make
-this parser several times smaller.}
-\label{tab:params}
-\end{table}
 
-Freezing is not left to the \texttt{finetune} configuration flag, which SuPar
-ignores: \texttt{TransformerEmbedding} calls
-\texttt{requires\_grad\_(True)} on the backbone unconditionally. We therefore
-freeze explicitly and assert afterwards that the embedding matrix is still frozen,
-because a silently fine-tuned encoder would invalidate every parameter-efficiency
-claim in this paper.
+Freezing cannot be left to SuPar's \texttt{finetune} flag, which it ignores:
+\texttt{TransformerEmbedding} calls \texttt{requires\_grad\_(True)} on the
+backbone unconditionally. We freeze explicitly and assert afterwards that the
+embedding matrix is still frozen, since a silently fine-tuned encoder would
+invalidate every parameter-efficiency claim here.
 
 \subsection{Approach 1: Subword Regularization}
 \label{sec:subword}
@@ -312,30 +257,27 @@ any single segmentation, and must instead compose the word's meaning from
 whatever pieces it is given.
 
 \paragraph{Why not BPE-Dropout literally.} XLM-R's tokenizer is SentencePiece
-\emph{Unigram}, not BPE. It has no merge table, so there are no merges to drop and
-BPE-Dropout does not apply as written. We therefore implement two backends. The
-\texttt{spm} backend is Kudo's principled analogue, sampling from the unigram
-lattice. The \texttt{maxmatch} backend is a behavioural analogue of BPE-Dropout
-over the vocabulary: at each position, with probability $p$, skip the longest
-matching piece and take the next-longest.
+\emph{Unigram}, not BPE: it has no merge table, so there are no merges to drop.
+We implement two backends instead. \texttt{spm} is Kudo's principled analogue,
+sampling from the unigram lattice; \texttt{maxmatch} is a behavioural analogue of
+BPE-Dropout over the vocabulary, skipping the longest matching piece with
+probability $p$ at each position and taking the next-longest.
 
-In our environment only \texttt{maxmatch} was available: recent
-\texttt{transformers} releases no longer expose the slow tokenizer that grants
-access to the underlying SentencePiece model, and the checkpoint ships no
-\texttt{sentencepiece.bpe.model} file. We report \texttt{maxmatch} results only,
-and note that the code raises rather than silently falling back --- an earlier
-version of our own tooling did fall back, which would have produced two
-identically-configured cells reported under different names.
+Only \texttt{maxmatch} was available to us: recent \texttt{transformers} releases
+no longer expose the slow tokenizer needed to reach the underlying SentencePiece
+model, and the checkpoint ships no \texttt{sentencepiece.bpe.model}. We therefore
+report \texttt{maxmatch} only, and the code raises rather than falling back
+silently --- a silent fallback would report two identically-configured cells
+under different names.
 
-\paragraph{Where the resampling happens.} This is the load-bearing
-implementation detail. SuPar's \texttt{Dataset.build} numericalises the entire
-corpus once, before the first epoch, and its collate function merely stacks
-pre-computed tensors. A stochastic tokenizer handed to the field alone would
-therefore be sampled exactly once per sentence for the whole run --- no
-regularization at all. We instead replace the \emph{training} loader's collate
-function so that each sentence is re-segmented every time it is drawn into a
-batch. Development and test loaders keep SuPar's default collator and stay
-deterministic, so no reported score is ever computed on perturbed input.
+\paragraph{Where the resampling happens.} This is the load-bearing detail.
+SuPar's \texttt{Dataset.build} numericalises the whole corpus once before the
+first epoch, and its collate function merely stacks pre-computed tensors, so a
+stochastic tokenizer handed to the field alone would be sampled exactly once per
+sentence for the entire run --- no regularization at all. We replace the
+\emph{training} loader's collate function instead, re-segmenting each sentence
+every time it is drawn into a batch. Development and test loaders keep SuPar's
+default collator, so no reported score is computed on perturbed input.
 
 \paragraph{Safety properties.} Sampled pieces are checked against the tokenizer
 vocabulary, so a sampled word can never degrade to \texttt{<unk>};
@@ -356,9 +298,8 @@ adapters into the frozen backbone in two families.
 \textbf{LoRA} \citep{hu-etal-2022-lora} on the self-attention query and value
 projections ($r{=}16$, $\alpha{=}32$, dropout $0.1$). This gives $24$ injection
 sites over the $12$ layers and adds $589{,}824$ trainable parameters, $4.7\%$ of
-the trainable budget and $0.2\%$ of the frozen backbone. We deliberately exclude the \texttt{dense} sublayers from
-the target list: in XLM-R that name matches three structurally different
-sublayers, making the configuration ambiguous.
+the trainable budget and $0.2\%$ of the frozen backbone. We exclude the \texttt{dense} sublayers, since in XLM-R that name matches
+three structurally different sublayers.
 
 \textbf{Pfeiffer bottleneck adapters} \citep{pfeiffer-etal-2020-mad}, that is
 $h + W_{\text{up}}(\mathrm{GELU}(W_{\text{down}}(h)))$ after each layer's output
@@ -369,18 +310,16 @@ baseline, so the adapters cannot damage the starting point and any change is
 something they learned.
 
 \paragraph{The adapter learning rate.} SuPar assigns \texttt{args.lr} to every
-parameter whose name begins with \texttt{encoder}, and adapters live under
-\texttt{encoder.bert.*}. They would therefore inherit $5\times10^{-5}$, far too
-low for randomly initialised adapter weights, which typically want
-$10^{-4}$ to $10^{-3}$. A run left at the inherited rate would look like
-``adapters do not help'' when the real finding is an under-trained adapter, so we
-intercept the optimizer and rate adapter parameters separately, sweeping
-$\{1,3,10\}\times10^{-4}$.
+parameter named \texttt{encoder*}, and adapters live under
+\texttt{encoder.bert.*}, so they would inherit $5\times10^{-5}$ --- far below the
+$10^{-4}$ to $10^{-3}$ that randomly initialised adapters want. Left at the
+inherited rate a run would look like ``adapters do not help'' when the real
+finding is an under-trained adapter, so we intercept the optimizer and rate
+adapter parameters separately at $3\times10^{-4}$.
 
-\paragraph{What we do not implement.} MAD-X also uses invertible adapters on the
-embedding layer for unseen scripts. Those are the component that requires
-unlabelled pre-training to be useful, which is exactly the cost these approaches
-exist to avoid, so we omit them and note the omission.
+\paragraph{What we do not implement.} MAD-X also uses invertible embedding
+adapters for unseen scripts. Those require unlabelled pre-training to be useful
+--- exactly the cost these approaches exist to avoid --- so we omit them.
 
 \subsection{Frontier-LLM Control Experiment}
 % This answers the instructor's question: is a custom model still needed?
@@ -395,34 +334,31 @@ temperature 0, given the gold tokenization and instructed to reuse those tokens
 exactly (the prompts are reproduced in full in Appendix~\ref{app:prompts}).
 Few-shot runs draw $k{=}3$ exemplars from the \emph{training} split
 only, so no evaluated sentence is ever shown to the model.\footnote{\label{fn:pilot}%
-Before settling on this two-tier design we ran one zero-shot pilot on
-\texttt{gemini-3.6-flash} over $30$ test sentences; the daily quota cut it off at
-$22$ answers, so we do not report it as a headline result. For completeness it
-scored $54.67$ labeled and $79.58$ unlabeled F1 on those $22$ sentences --- below
-the best configuration we do report ($55.37$ labeled) and still $20.2$ labeled F1
-below our frozen baseline, so it does not disturb any conclusion here. Its
-unlabeled score does exceed the baseline's labeled score, which is why we do not
-rest any argument on that particular comparison. Raw output is committed as
-\texttt{results/llm\_zeroshot.json}.}
+Before settling on this design we ran one zero-shot pilot on
+\texttt{gemini-3.6-flash}; the daily quota cut it off at $22$ of $30$ sentences,
+so we do not report it as a headline result. It scored $54.67$ labeled and $79.58$
+unlabeled F1 --- below the best configuration we do report, and $20.2$ labeled F1
+below our frozen baseline. Its unlabeled score does exceed the baseline's
+\emph{labeled} score, which is why we rest no argument on that comparison. Raw
+output: \texttt{results/llm\_zeroshot.json}.}
 
 Predictions are scored with the same conventions as the SuPar evaluation
 (preterminals excluded, \textsc{top} and punctuation deleted, co-indexation
 suffixes stripped, \textsc{advp}$\equiv$\textsc{prt}), which makes the Labeled
-F1 directly comparable to the parser's. We additionally report three diagnostics
-that a single F1 conflates: \emph{coverage}, the share of requests the API
-actually returned; \emph{syntactic validity}, the share of returned answers that
-parse as well-formed trees; and \emph{token fidelity}, the share that reproduce
-the given tokens exactly. Reporting an API failure as a model error would
-understate the model, so all behavioural rates are computed over responses
-received and coverage is reported separately.
+F1 directly comparable to the parser's. We additionally report three
+diagnostics a single F1 conflates: \emph{coverage} (requests the API returned),
+\emph{syntactic validity} (returned answers that parse as well-formed trees) and
+\emph{token fidelity} (answers reproducing the given tokens exactly). Since
+reporting an API failure as a model error would understate the model, all
+behavioural rates are computed over responses received and coverage is reported
+separately.
 
 % =====================================================================
 \section{Experimental Setup}
 
 \paragraph{One code path.} All cells are produced by a single entrypoint with one
 seeding path, selected by a \texttt{--mode} flag: \texttt{baseline},
-\texttt{bpe-dropout}, \texttt{adapters}, or \texttt{both}. \texttt{baseline}
-reproduces the frozen-encoder configuration exactly, so the comparison is not
+\texttt{bpe-dropout}, \texttt{adapters}, or \texttt{both}, so no comparison is
 confounded by differences between scripts. Every cell writes to a directory named
 after all settings that distinguish it --- mode, adapter family, backend, layer
 count, seed --- because two of our cells otherwise collide on disk.
@@ -434,45 +370,34 @@ $20$, gradient clipping at $5.0$. Subword regularization uses $p{=}0.1$ and
 resamples every multi-piece word. Full settings are in
 Appendix~\ref{app:hyper}.
 
-\paragraph{Hardware.} A single GPU per run on the university's shared
-\texttt{studentkillable} partition, which mixes NVIDIA RTX 2080 ($8$\,GB) and
-TITAN Xp ($12$\,GB) cards. Two properties of that environment shaped our setup.
-The partition is preemptible, so each cell is an independent job that can be
-resubmitted rather than one long run; and current PyTorch wheels build no kernels
-for the TITAN Xp's compute capability, which caused a job to report a working GPU
-and then fail at its first kernel launch --- so our training entrypoint now
-launches a probe kernel and refuses to start if it fails.
+\paragraph{Hardware and environment.} A single GPU per run on the shared,
+preemptible \texttt{studentkillable} partition, which mixes NVIDIA RTX 2080
+($8$\,GB) and TITAN Xp ($12$\,GB) cards; each cell is an independent
+resubmittable job rather than one long run. Three properties of this environment
+had to be handled rather than worked around, and our entrypoints resolve each
+explicitly and print the device and a kernel-launch test before training.
+Current PyTorch wheels build no kernels for the TITAN Xp's compute capability, so
+a job reports a working GPU and then fails at its first kernel launch.
+\texttt{torch.load} now defaults to \texttt{weights\_only=True} and refuses
+SuPar's checkpoints, which embed a config object and a dill-pickled transform.
+And GPU-trained checkpoints carry CUDA storage tags that will not deserialise in
+a CPU-only process without an explicit \texttt{map\_location}.
 
 \paragraph{Verifying that each intervention is active.} Both interventions can
-fail silently, so each run asserts its own configuration in the log. The adapter
-cells report the injection sites and parameter count and confirm that adapter
-parameters received \texttt{--adapter-lr} rather than the encoder rate; the
-subword-regularization cells report that the training loader was replaced and
-print the fertility they are actually training with ($2.04 \rightarrow 2.55$
-pieces per word, $31.7\%$ of words varying). A cell whose log shows zero adapter
-parameters, or no collator replacement, would be a baseline reported under
-another name.
+fail silently, so every run asserts its own configuration in the log: adapter
+cells report injection sites, parameter count and that adapter parameters
+received \texttt{--adapter-lr}; subword cells report the collator replacement and
+the fertility actually trained on ($2.04 \rightarrow 2.55$ pieces per word,
+$31.7\%$ of words varying). A cell logging zero adapter parameters, or no
+collator replacement, would be a baseline reported under another name.
 
-\paragraph{Reproducibility notes.} SuPar 1.1.4 predates the current PyTorch
-line, and three incompatibilities had to be handled rather than worked around.
-\texttt{torch.load} now defaults to \texttt{weights\_only=True} and refuses
-SuPar's checkpoints, which embed a config object and a dill-pickled transform;
-checkpoints trained on a GPU additionally carry CUDA storage tags that will not
-deserialise in a CPU-only process without an explicit \texttt{map\_location}; and
-current wheels build no kernels for the compute capability of some cards in our
-shared partition, which produces a job that reports a working GPU and then fails
-at its first kernel launch. Our entrypoints resolve all three explicitly, and
-print the device and its kernel-launch test before training, so a
-misconfiguration is visible in the first seconds of a log rather than an hour in.
-
-\paragraph{Sanity check.} Following the course guidance to demonstrate that
-training works before interpreting any negative result, we first overfit a
+\paragraph{Sanity check.} Before interpreting any negative result we overfit a
 $100$-sentence subset with development and test sets identical to it. The parser
-reaches $97.99$ labeled F1 and $98.73$ unlabeled F1 there, parsing $84\%$ of
-those sentences perfectly under the full labeled scheme. The pipeline can
-therefore fit this data to near-ceiling when the task is memorisation, which is
-what licenses reading any subsequent flat result as a property of the
-intervention rather than a defect in the setup.
+reaches $97.99$ labeled and $98.73$ unlabeled F1, parsing $84\%$ of those
+sentences perfectly under the full labeled scheme. The pipeline can therefore fit
+this data to near-ceiling when the task is memorisation, which licenses reading a
+subsequent flat result as a property of the intervention rather than a defect in
+the setup.
 
 \paragraph{Randomness.} All five cells in Table~\ref{tab:main} share one seed
 ($1$), which is what makes them directly comparable. To measure how much that
@@ -511,7 +436,7 @@ Frozen baseline              & 11.86M & 85.24 & 74.89 & 43.93 & 31.43 \\
 \end{tabular}
 \caption{Constituency parsing on the PPCHY test set (\%). UF/LF = unlabeled /
 labeled F1; UCM/LCM = complete-match rates; Trainable = parameters updated, of
-$281.3$M total. Every cell shares the configuration in
+$289.9$M total. Every cell shares the configuration in
 Appendix~\ref{app:hyper} and differs only in the intervention named.
 Adapters add $589{,}824$ (LoRA) or $894{,}528$ (bottleneck) parameters
 to the head's $11.86$M. All cells share seed $1$;
@@ -547,65 +472,34 @@ All cells returned 100\% of their requests. Models accessed 22--23 August 2026.}
 \label{tab:llm}
 \end{table*}
 
-\paragraph{The tokenization tax, measured.} Table~\ref{tab:fertility}
-quantifies the problem the interventions target, over $5000$ training terminals.
-XLM-R spends an average of $2.05$ subword pieces per Yiddish word
-deterministically; under sampling this rises to $2.58$, and about a third of
-words receive more than one distinct segmentation across draws. The longest
-sampled segmentation observed was $14$ pieces, comfortably below our
-\texttt{fix\_len} of $32$, so no word was silently truncated. These numbers also
-bound what subword regularization can do: it perturbs roughly a third of tokens,
-and leaves single-piece words untouched by construction.
+\paragraph{The tokenization tax, measured.} XLM-R spends $2.05$ subword pieces
+per Yiddish word deterministically, rising to $2.58$ under sampling, with about a
+third of words receiving more than one segmentation across draws
+(Appendix~\ref{app:data}). The longest sampled segmentation was $14$ pieces, well
+inside our \texttt{fix\_len} of $32$, so no word was silently truncated. These
+figures also bound what subword regularization can do: it perturbs roughly a third
+of tokens and leaves single-piece words untouched by construction.
 
-\begin{table}[t]
-\centering
-\small
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}lr@{}}
-\toprule
-\textbf{Statistic} & \textbf{Value} \\
-\midrule
-Fertility, deterministic  & 2.053 \\
-Fertility, sampled        & 2.579 \\
-Distinct segs.\ per word  & 1.395 \\
-Words with any variation  & 31.3\% \\
-Longest sampled seg.      & 14 \\
-\bottomrule
-\end{tabular}
-\caption{Segmentation statistics over 5000 training terminals for the
-\texttt{maxmatch} backend at $p{=}0.1$. Fertility is subword pieces per word, the
-standard measure of the ``tokenization tax''; the variation rate is the actual
-regularization signal. The longest sampled segmentation is well inside our
-\texttt{fix\_len} of 32, so no word was silently truncated.}
-\label{tab:fertility}
-\end{table}
-
-\todo{Optional: add a training-curve figure as PDF, from the per-epoch dev scores
-in the logs.}
 
 \label{sec:results-llm}
 \paragraph{The frozen-encoder baseline.} Training only the parser head over a
 completely frozen encoder reaches $74.89$ labeled F1 and $85.24$ unlabeled F1 on
 the PPCHY test set, parsing $31.4\%$ of test sentences perfectly under the full
 labeled scheme and $43.9\%$ when labels are ignored. Early stopping halted
-training after $68$ epochs, at which point training loss had fallen below $0.01$
-while development F1 had been flat for ten epochs --- the model had extracted what
-it could from the data it was given. Two things are worth noting for the
-comparisons that follow. The $10.4$-point gap between unlabeled and labeled F1 is
-the cost of PPCHY's function-tagged inventory: the brackets are largely right and
-the labels are the harder problem, which is the same asymmetry the LLM control
-exhibits far more severely. And this number is obtained with a frozen backbone, so
-it is a floor for what the encoder already knows rather than a ceiling on the
-architecture.
+training after $68$ epochs, with training loss below $0.01$ and development F1
+flat for ten. Two things matter for the comparisons that follow. The $10.4$-point
+gap between unlabeled and labeled F1 is the cost of PPCHY's function-tagged
+inventory --- the brackets are largely right and the labels are the harder
+problem, the same asymmetry the LLM control shows far more severely. And the
+backbone is frozen, so this is a floor on what the encoder already knows rather
+than a ceiling on the architecture.
 \paragraph{Segmentation noise is not the bottleneck.} Resampling subword
 segmentation during training moves labeled F1 by $+0.43$ points, from $74.89$ to
-$75.32$ (Table~\ref{tab:main}). The intervention was demonstrably active --- the
-training loader resampled every batch, fertility rose from $2.04$ to $2.55$
-pieces per word, and $31.7\%$ of words received more than one segmentation --- so
-this is a measurement of the idea, not of a misconfiguration. Complete-match
+$75.32$ (Table~\ref{tab:main}). The intervention was verified active in that run's
+log, so this measures the idea rather than a misconfiguration. Complete-match
 rates move slightly more ($+1.86$ labeled), consistent with a mild regularisation
-effect, but nothing here suggests that a parser over a frozen multilingual
-encoder is meaningfully limited by \emph{how} Yiddish words are split.
+effect, but nothing here suggests a parser over a frozen multilingual encoder is
+meaningfully limited by \emph{how} Yiddish words are split.
 
 \paragraph{Encoder capacity is.} Both adapter families produce a large gain:
 $+7.13$ labeled F1 for LoRA ($82.02$) and $+7.20$ for Pfeiffer bottlenecks
@@ -615,24 +509,22 @@ parsed perfectly under the full function-tagged scheme grows by almost half agai
 This is bought with $589{,}824$ and $894{,}528$ trainable parameters
 respectively, under $0.35\%$ of the frozen backbone, and no pre-training.
 
-Two features of this result argue that it is real rather than an artifact of one
-lucky run. The two adapter families are architecturally unrelated --- low-rank
-updates to attention projections versus bottleneck residuals after each layer's
-LayerNorm --- yet they land $0.07$ F1 apart, which is the kind of agreement one
-expects when both are recovering the same underlying capability. And the bottleneck
-adapters are zero-initialised, so at step $0$ that model \emph{is} the baseline;
-every point of the gain was learned by $894{,}528$ parameters that started as an
-identity function.
+Two features argue this is real rather than one lucky run. The two adapter
+families are architecturally unrelated --- low-rank updates to attention
+projections versus bottleneck residuals after each layer's LayerNorm --- yet land
+$0.07$ F1 apart, the agreement one expects when both recover the same underlying
+capability. And the bottleneck adapters are zero-initialised, so at step $0$ that
+model \emph{is} the baseline: every point was learned by $894{,}528$ parameters
+that started as an identity function.
 
 \paragraph{Combining them is slightly worse than adapters alone.} The cell with
 both interventions active reaches $81.24$ labeled F1 --- still $+6.35$ over the
-baseline, but $0.78$ points \emph{below} LoRA on its own, and $3.74$ points below
-it on labeled complete match. Both interventions were verified active in that run.
-So segmentation resampling is not merely unhelpful here; once the encoder can
-adapt, the noise it injects costs a little. Under the reading we develop below,
-that is what one would expect: the adapters are learning to use the encoder's
-representations of the canonical segmentation, and perturbing that segmentation
-makes their target less stable.
+baseline, but $0.78$ points \emph{below} LoRA on its own and $3.74$ below it on
+labeled complete match, with both interventions verified active. Segmentation
+resampling is therefore not merely unhelpful once the encoder can adapt: the noise
+it injects costs a little. Under the reading we develop below that is expected ---
+the adapters learn to use the encoder's representations of the canonical
+segmentation, and perturbing it makes their target less stable.
 
 \paragraph{The LLM control.} Table~\ref{tab:llm} reports two model tiers, each
 with a matched zero-shot and 3-shot condition over the same sentences. Three
@@ -719,14 +611,14 @@ convergence. The parameter counts sharpen the point: $0.59$M trainable
 parameters, $0.2\%$ of the frozen backbone, recover seven points of labeled F1
 that no amount of segmentation noise could reach.
 
-\paragraph{What this says about static vocabulary adaptation.} We did not run the
-static route, so we cannot compare directly against it. But our result predicts
-where its benefit would have to come from. Vocabulary injection changes which
-pieces the encoder sees; our subword-regularization cell shows that this class of
-change moves parsing F1 very little on a frozen encoder. Injection is also
-normally paired with continued pre-training, which \emph{does} update encoder
-weights --- and that, on our evidence, is the part that would matter. A cheaper
-test of the same hypothesis is simply to let a small adapter learn.
+\paragraph{What this says about static vocabulary adaptation.} We did not run
+the static route, so we cannot compare against it directly --- but our result
+predicts where its benefit would have to come from. Vocabulary injection changes
+which pieces the encoder sees, and our subword cell shows that class of change
+moves parsing F1 very little on a frozen encoder. Injection is normally paired
+with continued pre-training, which \emph{does} update encoder weights; on our
+evidence that is the part that matters, and letting a small adapter learn is a
+far cheaper test of the same hypothesis.
 
 \paragraph{What the LLM control settles.} The deficit is large and, more usefully,
 structured. Output is essentially always well-formed; the labeled/unlabeled gap
@@ -738,22 +630,20 @@ but cannot reliably deliver \emph{annotation-faithful} analyses of it. That is
 precisely the capability a treebank-trained parser supplies, and it is why the
 existence of strong general-purpose models does not retire this task.
 
-\paragraph{A methodological point.} Token fidelity deserves to be reported
-routinely in LLM parsing evaluations. In our Lite zero-shot condition, $56$ of
-$100$ answers failed to reproduce the supplied tokens, and those answers score
-near zero by construction --- a tree over different terminals cannot align to the
-gold spans at all. An evaluation reporting only F1 would have attributed that to
-parsing inability. The distinction is not cosmetic: it changes the headline number
-by more than twenty points and it points at a different fix (prompt and decoding
-constraints, rather than model capability).
+\paragraph{A methodological point.} Token fidelity deserves routine reporting in
+LLM parsing evaluations. In our Lite zero-shot condition $56$ of $100$ answers
+failed to reproduce the supplied tokens, and such answers score near zero by
+construction --- a tree over different terminals cannot align to the gold spans at
+all --- so an F1-only evaluation would have attributed that to parsing inability.
+The distinction changes the headline number by more than twenty points and points
+at a different fix: prompt and decoding constraints, not model capability.
 
-\paragraph{On our own measurement.} We twice found that a plausible-looking
-number was an artifact rather than a result: an API rate-limit failure counted as
-a model error, and a label inventory counted with co-indexation attached. Both
-were caught because the pipeline stores per-sentence records and can recompute
-summaries without re-querying. We would recommend that design to anyone
-evaluating a paid API: the ability to re-derive every metric offline is worth more
-than the disk it costs.
+\paragraph{On our own measurement.} Two plausible-looking numbers here turned
+out to be artifacts --- an API rate-limit failure counted as a model error, and a
+label inventory counted with co-indexation attached --- and both were caught
+because the pipeline stores per-sentence records and can recompute every summary
+offline without re-querying. For anyone evaluating a paid API, that property is
+worth more than the disk it costs.
 
 \paragraph{How much of this is the random seed.} We retrained the frozen
 baseline and the LoRA cell at a second seed. The baseline moved by $0.22$ LF and
@@ -763,9 +653,8 @@ subword-regularization result does not survive the same comparison: its entire
 $+0.43$ gain is smaller than the $0.51$ LF separating two runs of the LoRA cell
 that differ in nothing but their random seed. We therefore report it as ``no
 effect we can detect'' rather than as a precise estimate of zero. We did not
-replicate the remaining three cells; with both endpoints of the grid bracketed,
-a third replication would tell us little we do not already know about the scale
-of run-to-run variation here.
+replicate the remaining three cells: with both endpoints of the grid bracketed, a
+third replication would add little.
 
 
 \section{Conclusion}
@@ -773,24 +662,22 @@ of run-to-run variation here.
 We asked whether the subword-fragmentation bottleneck in Yiddish parsing yields
 to dynamic, parameter-efficient adaptation, rather than to the static route of
 vocabulary injection plus continued pre-training. We evaluated stochastic subword
-re-segmentation and MAD-X-style
-adapters over a fully frozen encoder, training $4.1\%$ of the model's parameters
-and requiring no pre-training at all. It does yield --- but not for the reason the
-framing assumed. Perturbing segmentation, the most direct available attack on
-fragmentation, gains $0.43$ labeled F1; adapters gain $7.1$, with two unrelated
-families agreeing to $0.07$ F1 while adding under $0.9$M parameters to a frozen
-$278$M backbone. On this evidence the tokenization tax is real but not the binding
+re-segmentation and MAD-X-style adapters over a fully frozen encoder, training
+$4.1\%$ of the parameters and requiring no pre-training. It does yield --- but not
+for the reason the framing assumed. Perturbing segmentation, the most direct
+available attack on fragmentation, gains $0.43$ labeled F1; adapters gain $7.1$,
+with two unrelated families agreeing to $0.07$ F1 while adding under $0.9$M
+parameters to a frozen $278$M backbone. On this evidence the tokenization tax is real but not the binding
 constraint for constituency parsing: what the encoder lacked was permission to
 adapt, not cleaner pieces to work with.
 
 Alongside this we tested the premise itself: whether a current general-purpose
 model already parses historical Yiddish well enough to make the exercise moot. It
 does not. The best of four frontier configurations reaches $55.4$ labeled F1
-against our parser's $74.9$, and its unlabeled score does not reach the parser's
-labeled score. The shape of that gap is informative --- output
-is well-formed, and in-context examples raise token fidelity far more than parse
-quality --- which suggests that treebank-faithful syntactic analysis remains a
-task where a small, dedicated, cheaply-trained model earns its place.
+against our parser's $74.9$. The shape of that gap is informative --- output is
+well-formed, and in-context examples raise token fidelity far more than parse
+quality --- which suggests treebank-faithful syntactic analysis remains a task
+where a small, dedicated, cheaply-trained model earns its place.
 
 \section*{Limitations}
 Our evidence has several bounds. The treebank is historical, so conclusions may
@@ -805,54 +692,102 @@ for that reason.
 % Required by the course guidelines (transparency, not graded).
 \section*{AI Disclosure and Reflection}
 
-\todo{Read this draft critically and rewrite anything that does not match your own
-recollection --- you own every claim in it.}
-
-We used AI tools substantially in this project, in four distinguishable roles.
-
-\textbf{Brainstorming (Gemini, proposal stage).} We used Gemini to survey
-parameter-efficient fine-tuning methods and subword regularization variants while
-choosing a direction, and to tighten the English of the proposal.
-
-\textbf{Implementation (Claude, via Claude Code).} The parameter-efficient
-additions --- the stochastic segmentation sampler and its training collator, the
-adapter injection and freezing logic, the shared training entrypoint, and the
-checkpoint-safe evaluator --- were written with Claude in an iterative loop, as
-were the frontier-LLM baseline script and the data and statistics utilities. The
-design decisions those files encode were arrived at through that dialogue: for
-instance, that resampling must replace the training collator rather than the
-tokenizer field, because SuPar numericalises the corpus once before training.
-
-\textbf{Debugging and cluster operation.} A substantial part of the assistance was
-diagnostic rather than generative. Several failures were identified this way,
-including a PyTorch build whose CUDA version exceeded the cluster's driver (which
-falls back to CPU with only a warning, roughly $100\times$ slower); a later build
-lacking kernels for the compute capability of one of the partition's GPU
-generations; a silent fallback in our own sampler that would have reported two
-identically-configured experiments under different names; and a metric that
-counted API rate-limit failures as model errors, understating a model by fourteen
-points before we corrected it.
-
-\textbf{Writing.} Sections of this report were drafted with Claude from our
-results and notes, then revised by us. Every number reported here was produced by
-our own runs and checked against the logs and result files in the repository.
-
-\paragraph{Reflection.} The assistance was most valuable where it was least
-glamorous. Reading a stack trace, noticing that
-\texttt{torch.cuda.is\_available()} can return \texttt{True} on a GPU whose
-kernels the wheel does not contain, or that a $73\%$ ``syntactic validity rate''
-was really a quota artifact, saved us days and prevented at least two wrong
-numbers from reaching this paper. It was least reliable when reasoning
-confidently from incomplete evidence: an early diagnosis of our slow training run
-blamed the wrong cause twice --- first a missing GPU allocation, then the login
-node --- before the actual error message in the job's \texttt{stderr} settled it.
-The practical lesson we take is that AI assistance accelerated our work in
-proportion to how much concrete evidence we put in front of it, and misled us in
-proportion to how little.
+We used Gemini at the proposal stage to survey parameter-efficient fine-tuning
+and subword-regularization variants, and Claude (through Claude Code) for
+implementation, cluster debugging and drafting: the segmentation sampler, the
+adapter injection and freezing logic, the shared training entrypoint, the
+checkpoint-safe evaluator and the LLM-baseline script were written in dialogue
+with it, it drafted sections of this report from our results and notes, and it
+diagnosed failures that would have cost us days --- a PyTorch build whose CUDA
+version exceeded the cluster driver and silently fell back to CPU, and a metric
+counting API rate-limit failures as model errors. Reflecting on the experience:
+the assistance was useful in proportion to the concrete evidence we put in front
+of it and misleading in proportion to that evidence's absence --- it twice
+diagnosed our slow training run confidently and wrongly before the job's
+\texttt{stderr} settled the question --- and every number reported here was
+produced by our own runs and checked against the logs and result files in our
+repository, for which we take full responsibility.
 
 \bibliography{references}
 
 \appendix
+
+\section{Data and Segmentation Statistics}
+\label{app:data}
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Component} & \textbf{Params} & \textbf{\%} \\
+\midrule
+Parser head                  & 11{,}272{,}290 & 3.89 \\
+\quad of which label biaffine & 10{,}098{,}990 & 3.48 \\
+Scalar mix + projection      &     589{,}829 & 0.20 \\
+\midrule
+\textbf{Trainable}           & \textbf{11{,}862{,}119} & \textbf{4.09} \\
+Frozen backbone              & 278{,}043{,}648 & 95.91 \\
+\quad of which embeddings    & 192{,}001{,}536 & 66.23 \\
+\midrule
+Total                        & 289{,}905{,}767 & 100.0 \\
+\bottomrule
+\end{tabular}
+\caption{Parameter budget, identical across cells except for the adapter
+parameters each one adds (Section~\ref{sec:adapters}). Percentages of the total.
+Note that the label biaffine scorer dominates the trainable budget because it
+scales with the label inventory, and PPCHY's function-tagged labels are numerous
+(226 in our splits, Section~\ref{sec:data}); a category-only treebank would make
+this parser several times smaller.}
+\label{tab:params}
+\end{table}
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+\textbf{Split} & \textbf{Sent.} & \textbf{Tokens} & \textbf{Mean len.} \\
+\midrule
+Train & 15{,}394 & 171{,}065 & 11.1 \\
+Dev   &     855  &   9{,}323 & 10.9 \\
+Test  &     856  &   9{,}619 & 11.2 \\
+\midrule
+Total & 17{,}105 & 190{,}007 & 11.1 \\
+\bottomrule
+\end{tabular}
+\caption{PPCHY data statistics for our SuPar-ready splits (all corpus
+components, 90/5/5 split, seed 42). No tree was rejected by the cleaning step.
+The treebank uses 226 distinct constituent labels once co-indexation suffixes are
+stripped (402 with them); the most frequent are \textsc{np-sbj} (19{,}565),
+\textsc{np} (14{,}749) and \textsc{ip-mat} (14{,}164).}
+\label{tab:data}
+\end{table}
+
+\begin{table}[t]
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Statistic} & \textbf{Value} \\
+\midrule
+Fertility, deterministic  & 2.053 \\
+Fertility, sampled        & 2.579 \\
+Distinct segs.\ per word  & 1.395 \\
+Words with any variation  & 31.3\% \\
+Longest sampled seg.      & 14 \\
+\bottomrule
+\end{tabular}
+\caption{Segmentation statistics over 5000 training terminals for the
+\texttt{maxmatch} backend at $p{=}0.1$. Fertility is subword pieces per word, the
+standard measure of the ``tokenization tax''; the variation rate is the actual
+regularization signal. The longest sampled segmentation is well inside our
+\texttt{fix\_len} of 32, so no word was silently truncated.}
+\label{tab:fertility}
+\end{table}
 
 \section{Hyperparameters}
 \label{app:hyper}
@@ -977,10 +912,5 @@ Of 152 constituents predicted across those 22 scored answers, 19
 \textsc{np-ob1-rsp}, \textsc{np-dat} and \textsc{cp-que-spe}. These are
 Penn-historical labels used by sibling corpora; this PPCHY release writes the
 corresponding arguments \textsc{np-acc} and \textsc{np-dtv}.
-
-\section{Example Parses}
-\todo{Optional: one gold vs.\ predicted tree (as PDF figures), one Gemini
-failure case -- a good candidate is the sentence where it emitted
-\textsc{frag}/\textsc{intj} for a \textsc{qtp} quotation structure.}
 
 \end{document}
