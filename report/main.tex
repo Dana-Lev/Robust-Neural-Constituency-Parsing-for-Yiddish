@@ -711,7 +711,8 @@ test of the same hypothesis is simply to let a small adapter learn.
 \paragraph{What the LLM control settles.} The deficit is large and, more usefully,
 structured. Output is essentially always well-formed; the labeled/unlabeled gap
 persists across every condition; and the apparent benefit of in-context examples
-halves once token fidelity is controlled for. Taken together these say that the
+halves once token fidelity is controlled for, to within $0.04$ points of the
+same residual on both tiers. Taken together these say that the
 models can read historical Yiddish and produce plausible constituent structure,
 but cannot reliably deliver \emph{annotation-faithful} analyses of it. That is
 precisely the capability a treebank-trained parser supplies, and it is why the
