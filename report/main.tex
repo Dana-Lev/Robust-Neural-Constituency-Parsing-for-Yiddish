@@ -67,7 +67,7 @@ alone. The bottleneck is therefore not how Yiddish words are split but that
 the encoder is not permitted to adapt. We additionally test whether
 the problem is already solved by general-purpose models: across two model tiers
 and matched zero-/few-shot conditions, the best frontier configuration reaches
-$54.2$ labeled F1 against our parser's $74.9$, and we show that most of the
+$55.4$ labeled F1 against our parser's $74.9$, and we show that most of the
 apparent benefit of in-context examples is improved instruction-following rather
 than improved parsing.
 \end{abstract}
@@ -127,7 +127,7 @@ $7.1$ --- which relocates the bottleneck from the tokenizer to the frozen encode
 \item An internal replication of that gain across two unrelated adapter families
 agreeing to $0.07$ F1, at under $0.9$M trainable parameters and no pre-training.
 \item A frontier-LLM control on the same test data and the same metric, showing a
-gap of $27.9$ labeled F1 to our best parser --- so the parsing problem is not
+gap of $26.7$ labeled F1 to our best parser --- so the parsing problem is not
 dissolved by scale.
 \item A measurement result with wider relevance: on this task, in-context
 examples improve \emph{token fidelity} far more than parse quality, and an
@@ -511,7 +511,7 @@ to the head's $11.86$M. Every cell is a single seed.}
 \midrule
 \multicolumn{7}{l}{\emph{Frontier tier} (\texttt{gemini-3.5-flash}, $n{=}20$)} \\
 \quad & zero-shot & 95.0 & 70.0 & 45.53 & 59.65 & 64.23 \\
-\quad & 3-shot    & 94.7 & 84.2 & \textbf{54.24} & \textbf{63.39} & 73.73 \\
+\quad & 3-shot    & 95.0 & 85.0 & \textbf{55.37} & \textbf{64.55} & 74.38 \\
 \midrule
 \multicolumn{7}{l}{\emph{Lite tier} (\texttt{gemini-3.5-flash-lite}, $n{=}100$)} \\
 \quad & zero-shot & 86.0 & 44.0 & 24.74 & 46.41 & 42.46 \\
@@ -525,8 +525,7 @@ as well-formed trees; Tok = share reproducing the supplied tokenization exactly;
 LF/UF = corpus-level micro labeled/unlabeled F1; LF$_{\text{tok}}$ = labeled F1
 computed only over token-faithful answers, which separates parsing ability from
 instruction-following. Both conditions of a tier score the same sentences.
-Models accessed \todo{date}; the 3-shot frontier run returned 19 of 20 requests
-(free-tier daily cap), all other cells 100\%.}
+All cells returned 100\% of their requests. Models accessed \todo{date}.}
 \label{tab:llm}
 \end{table*}
 
@@ -622,27 +621,31 @@ with a matched zero-shot and 3-shot condition over the same sentences. Three
 findings hold across both tiers.
 
 First, \textbf{no configuration approaches a trained parser.} The best cell is
-the frontier model with exemplars, at $54.24$ labeled F1 --- $20.7$ points below
-our frozen-encoder baseline and $27.9$ below our best adapted parser. Its \emph{unlabeled} F1
-($73.73$) does not even reach the baseline's \emph{labeled} F1 ($74.89$): the
+the frontier model with exemplars, at $55.37$ labeled F1 --- $19.5$ points below
+our frozen-encoder baseline and $26.7$ below our best adapted parser. Its
+\emph{unlabeled} F1 ($74.38$) does not reach even the baseline's \emph{labeled} F1
+($74.89$), narrowly but consistently: the
 parser assigns full function-tagged labels more accurately than the language
 model draws unlabeled brackets. A dedicated parser is therefore not made
 redundant by current general-purpose models, and the margin is not marginal.
 
 Second, \textbf{exemplars help, and the effect replicates.} Labeled F1 rises
-$+8.7$ points on the frontier tier and $+13.0$ on the Lite tier. Per sentence,
-the 3-shot condition is better on 48 of 100 Lite sentences and worse on 20
-(sign test $p<0.001$); on the smaller frontier sample it is better on 9 of 19
-and worse on 2 ($p=0.07$).
+$+9.8$ points on the frontier tier and $+13.0$ on the Lite tier. Per sentence,
+the 3-shot condition wins on 48 of 100 Lite sentences and loses on 20 (sign test
+$p<0.001$), and on the frontier tier wins on 10 of 20 and loses on 2
+($p=0.039$). Both tiers reach significance independently.
 
 Third, and least expected, \textbf{most of that gain is instruction-following
 rather than parsing.} Token fidelity -- reproducing the supplied tokens exactly
 -- rises from 44\% to 71\% on the Lite tier and 70\% to 84\% on the frontier
 tier, and answers that fail it score near the floor (13.9 LF on Lite, versus
-51.2 for faithful answers). Restricting the comparison to token-faithful
-answers shrinks the few-shot gain from $+13.0$ to $+4.9$ points on Lite and
-from $+8.7$ to $+3.7$ on the frontier tier. What the exemplars mainly teach is
-the output contract, not Yiddish syntax.
+51.2 for faithful answers). Restricting the comparison to token-faithful answers
+shrinks the few-shot gain from $+13.0$ to $+4.94$ on Lite and from $+9.8$ to
+$+4.90$ on the frontier tier. That the two residuals agree to $0.04$ points, while
+the raw gains differ by more than three, is the clearest statement of the result:
+the part of the improvement that is actually about parsing is small, equal across
+tiers, and swamped in the raw numbers by how much better each model becomes at
+following the output contract.
 
 Where labels do go wrong, the errors are systematic rather than random. In a
 zero-shot pilot run (Appendix~\ref{app:labels}), only 12.5\% of predicted
@@ -655,7 +658,7 @@ wrong variant of it, rather than failing to analyse Yiddish; the 3-shot
 conditions visibly adopt this corpus's inventory instead.
 
 Even read charitably, none of this displaces a trained parser: the best cell's
-$54.24$ labeled F1 is $20.7$ points below our baseline
+$55.37$ labeled F1 is $19.5$ points below our baseline
 (Table~\ref{tab:main}), and even its \emph{unlabeled} score does not reach the
 baseline's \emph{labeled} score.
 
@@ -664,7 +667,7 @@ examples do move labeled F1 substantially, so a meaningful part of the zero-shot
 deficit is conventional rather than linguistic --- the models know Penn-style
 historical annotation and needed to be shown \emph{which} variant this corpus
 uses. But the decomposition above bounds how much that means: once token fidelity
-is held constant, the gain is $+3.7$ to $+4.9$ points, not $+8.7$ to $+13.0$. In
+is held constant, the gain is $+4.9$ points on both tiers, not $+9.8$ to $+13.0$. In
 other words, exemplars fix the output contract first and the annotation scheme
 second, and what remains after both is a genuine shortfall in structural analysis
 of historical Yiddish.
@@ -756,7 +759,7 @@ adapt, not cleaner pieces to work with.
 
 Alongside this we tested the premise itself: whether a current general-purpose
 model already parses historical Yiddish well enough to make the exercise moot. It
-does not. The best of four frontier configurations reaches $54.2$ labeled F1
+does not. The best of four frontier configurations reaches $55.4$ labeled F1
 against our parser's $74.9$, and its unlabeled score does not reach the parser's
 labeled score. The shape of that gap is informative --- output
 is well-formed, and in-context examples raise token fidelity far more than parse
@@ -767,10 +770,9 @@ task where a small, dedicated, cheaply-trained model earns its place.
 Our evidence has several bounds. The treebank is historical, so conclusions may
 not transfer to modern Yiddish; we test one encoder and one parsing formalism.
 The LLM control uses 20 sentences per frontier condition and 100 per Lite
-condition; free-tier daily caps bounded the former, so the frontier comparison
-in particular has a wide confidence interval and the sign test over 19 paired
-sentences only reaches $p=0.07$. The Lite tier, where 100 sentences were
-affordable, is where the few-shot effect is statistically clear. LLM results also depend on the prompt and on a model version that
+condition, bounded by free-tier daily caps. Both paired comparisons reach
+significance ($p=0.039$ and $p<0.001$), but the frontier interval is wide at
+$n{=}20$, and the effect is estimated far more precisely on the Lite tier. LLM results also depend on the prompt and on a model version that
 providers change without notice; we report the exact model identifier and date
 for that reason. 
 
