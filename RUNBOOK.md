@@ -453,22 +453,34 @@ tail -f logs/peft_<jobid>.out
 `studentkillable` jobs can be preempted. If a job dies, resubmit the same line —
 each cell is independent.
 
-### Follow-up runs (Step 6b, after the first six land)
+### Follow-up runs (Step 6b, after the first five land)
+
+**Done — seed replication on the two cells the paper's main contrast rests on:**
 
 ```bash
-# Adapter learning-rate sweep -- a flat adapter result at too low an LR is an
-# artifact, not a finding.
+SEED=2 sbatch src/parser_train_peft.slurm baseline
+SEED=2 sbatch src/parser_train_peft.slurm adapters lora
+```
+
+Jobs 775109 / 775110, both `COMPLETED`. Evaluated to
+`results/eval_baseline_seed2.txt` and `results/eval_adapters_lora_seed2.txt`;
+reported in `results/parsing_results.md` and Appendix "Seed Replication".
+This is what let us say the +0.43 subword gain is below seed noise, so it is
+the one follow-up that changed a claim in the paper.
+
+**Not run — optional, and not needed for the reported results:**
+
+```bash
+# Adapter learning-rate sweep. This was insurance against "adapters don't help"
+# being an under-training artifact; the adapters gained ~7 LF at 3e-4, so the
+# insurance was never needed. Do NOT describe this as a completed sweep.
 ADAPTER_LR=1e-4 OUTPUT_DIR=./output/parser_adapters_lora_lr1e-4 \
     sbatch src/parser_train_peft.slurm adapters lora
 ADAPTER_LR=1e-3 OUTPUT_DIR=./output/parser_adapters_lora_lr1e-3 \
     sbatch src/parser_train_peft.slurm adapters lora
 
-# Seed variance on the cells you will report
-SEED=2 sbatch src/parser_train_peft.slurm baseline
+# A third seed, and 12 encoder layers into the scalar mix instead of 4.
 SEED=3 sbatch src/parser_train_peft.slurm baseline
-
-# Optional: 12 encoder layers into the scalar mix, to connect to the prior
-# project's 83.81 configuration
 N_BERT_LAYERS=12 sbatch src/parser_train_peft.slurm baseline
 ```
 

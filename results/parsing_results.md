@@ -2,6 +2,8 @@
 
 All cells: frozen `skulick/xlmb-ybc-ck05` encoder (278.0M parameters, none
 trained), one entrypoint, seed 1, early stopping on dev with patience 10.
+The baseline and LoRA cells were also retrained at seed 2 (see
+[Seed replication](#seed-replication)).
 Raw evaluation output in `eval_*.txt`; per-epoch curves in the job logs.
 
 | Cell | Trainable | UF | LF | UCM | LCM |
@@ -25,7 +27,7 @@ Change against the baseline:
 
 **Segmentation is not the bottleneck.** Resampling subword segmentation every
 batch — verified active, fertility 2.04 → 2.55, 31.7% of words varying — moves
-labeled F1 by +0.43.
+labeled F1 by +0.43, which is inside the seed-to-seed spread measured below.
 
 **Encoder capacity is.** Both adapter families gain ~+7.2 LF while leaving
 segmentation untouched, for 589,824 (LoRA) and 894,528 (bottleneck) parameters:
@@ -44,10 +46,36 @@ narrowing to 7.73 with adapters. PPCHY's 226 function-tagged labels are what
 makes this task demanding, and it is the same asymmetry the LLM control shows far
 more severely.
 
+## Seed replication
+
+The two cells carrying the main contrast were retrained end to end at a second
+seed, changing nothing else.
+
+| Cell | UF | LF | UCM | LCM |
+|---|---:|---:|---:|---:|
+| Baseline, seed 1 | 85.24 | 74.89 | 43.93 | 31.43 |
+| Baseline, seed 2 | 85.55 | 74.67 | 44.74 | 31.66 |
+| *spread* | *0.31* | *0.22* | *0.81* | *0.23* |
+| LoRA, seed 1 | 89.75 | 82.02 | 58.53 | 46.73 |
+| LoRA, seed 2 | 89.08 | 81.51 | 57.36 | 45.68 |
+| *spread* | *0.67* | *0.51* | *1.17* | *1.05* |
+
+Adapter gain over baseline: **+7.13 LF** (seed 1), **+6.84 LF** (seed 2), mean
+**+6.98**. Stable to 0.29 LF.
+
+**This settles the subword result.** The +0.43 LF subword gain is smaller than
+the 0.51 LF separating two runs of the LoRA cell that differ only in their
+random seed. It is not an effect we can detect. The adapter gain, at ~7 LF, is
+more than ten times the largest spread either cell shows.
+
+Raw output: `eval_baseline_seed2.txt`, `eval_adapters_lora_seed2.txt`
+(jobs 775109, 775110; both `COMPLETED`, exit `0:0`).
+
 ## Caveats
 
-- Every cell is a single seed. The ~7-point adapter gap is far too large to be
-  seed noise; the +0.43 subword result is not.
+- The three remaining cells (subword, bottleneck, both) are single-seed. Both
+  endpoints of the grid are now bracketed, which is what the interpretation
+  rests on.
 - The `spm` (Kudo lattice) backend was unavailable in this environment, so only
   the `maxmatch` backend was evaluated.
 - Sanity check: the same pipeline reaches 97.99 LF overfitting a 100-sentence
