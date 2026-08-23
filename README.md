@@ -15,12 +15,9 @@ Dana Lev · Ayala May
 
 Yiddish is fragmented aggressively by multilingual subword tokenizers. Kulick et
 al. (2022) built the first Yiddish POS tagger and identified this "tokenization
-tax" as an obstacle to syntactic parsing. A previous course project attacked it
-*statically* — injecting clean Jochre vocabulary with FOCUS and running
-domain-adaptive pre-training (DAPT) — and found that although the injected tokens
-became active, downstream parsing F1 did not improve (83.81 → 83.02 Labeled F1).
+tax" as an obstacle to syntactic parsing.
 
-This project asks whether the same bottleneck can be addressed **dynamically and
+This project asks whether that bottleneck can be addressed **dynamically and
 parameter-efficiently**, without modifying the physical vocabulary and without any
 continued pre-training:
 
@@ -107,7 +104,7 @@ runs of the grid can overwrite each other's checkpoints.
 ### Evaluation
 
 ```bash
-python src/evaluate_peft.py --path ./output/parser_both_lora/yiddish_parser.pt --adapter-type lora
+python src/evaluate_peft.py --path ./output/parser_both_lora_maxmatch/yiddish_parser.pt --adapter-type lora
 ```
 
 **Use this instead of `CRFConstituencyParser.load` for adapter checkpoints.**
@@ -143,6 +140,31 @@ Running `testing.py` without `--data` falls back to 30 **synthetic** pilot
 sentences. Those exist only to smoke-test the pipeline and must never be reported
 as PPCHY results.
 
+## Results
+
+Constituency parsing on the PPCHY test set (856 sentences), frozen
+`skulick/xlmb-ybc-ck05` encoder throughout. Full table, deltas and caveats in
+[`results/parsing_results.md`](results/parsing_results.md).
+
+| Cell | Trainable | UF | LF |
+|---|---:|---:|---:|
+| Frozen baseline | 11.86M | 85.24 | 74.89 |
+| + Subword regularization | 11.86M | 85.58 | 75.32 |
+| + Adapters (LoRA r=16) | 12.45M | 89.75 | **82.02** |
+| + Adapters (Pfeiffer bottleneck) | 12.76M | 89.43 | **82.09** |
+| + Both | 12.45M | 89.23 | 81.24 |
+
+Resampling subword segmentation is worth +0.43 LF — smaller than the
+seed-to-seed spread we measure, so not an effect we can detect. Adapters are
+worth ~+7.1 LF, replicated across two unrelated adapter families that agree to
+0.07 LF, and reproduced at a second seed. **The bottleneck is not how Yiddish
+words are split; it is that the encoder cannot adapt.**
+
+The best of five Gemini configurations reaches 55.37 LF on the same test
+sentences and the same metric — 19.5 points below the frozen baseline and 26.7
+below the best adapted parser
+([`results/llm_comparison.md`](results/llm_comparison.md)).
+
 ## Data
 
 No corpus data is redistributed in this repository. `yiddish_parser/data/README.md`
@@ -151,13 +173,14 @@ rebuilds the SuPar-ready splits.
 
 ## Attribution
 
-This project builds on the course project of **Amit Halfon and Omri Boiman**,
+The data-preparation and original training pipeline — the scripts listed
+directly above this section's table as *inherited* — come from the course project
+of **Amit Halfon and Omri Boiman**,
 [Neural Constituency Parsing for Yiddish via Vocabulary Adaptation](https://github.com/omri-boiman/Neural-Constituency-Parsing-for-Yiddish-via-Vocabulary-Adaptation),
-which established the first neural constituency parser for Yiddish and the
-FOCUS + DAPT results used here as reference numbers. Their pipeline scripts are
-reused, with thanks, as the structural foundation; the files listed in the first
-table above (subword regularization, language adapters, the PEFT entrypoint, the
-safe evaluator, and the LLM baseline) are new work for this project.
+and are reused here with thanks so the corpus can be rebuilt end to end. Nothing
+from that project is reported as a result in this one. The files listed in the
+first table above — subword regularization, language adapters, the PEFT
+entrypoint, the safe evaluator, and the LLM baseline — are new work.
 
 ## References
 

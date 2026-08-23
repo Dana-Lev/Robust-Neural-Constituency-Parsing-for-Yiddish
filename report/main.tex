@@ -59,7 +59,8 @@ language adapters over a fully frozen encoder, neither of which modifies the
 vocabulary or requires pre-training. Training only
 $11.9$M of $289.9$M parameters ($4.1\%$), we compare both against a frozen-encoder
 baseline on the Penn Parsed Corpus of Historical Yiddish. The two diverge
-sharply: resampling segmentation moves labeled F1 by $+0.43$ points, while
+sharply: resampling segmentation moves labeled F1 by $+0.43$ points, which is
+inside our measured seed-to-seed variation, while
 adapters move it by $+7.1$, two architecturally unrelated adapter families land
 within $0.07$ F1 of each other for under $0.9$M trainable parameters and no
 pre-training, and combining both interventions is slightly worse than adapters
@@ -249,7 +250,7 @@ Total & 17{,}105 & 190{,}007 & 11.1 \\
 components, 90/5/5 split, seed 42). No tree was rejected by the cleaning step.
 The treebank uses 226 distinct constituent labels once co-indexation suffixes are
 stripped (402 with them); the most frequent are \textsc{np-sbj} (19{,}565),
-\textsc{ip-mat} (14{,}164) and \textsc{pp} (13{,}590).}
+\textsc{np} (14{,}749) and \textsc{ip-mat} (14{,}164).}
 \label{tab:data}
 \end{table}
 
@@ -385,12 +386,24 @@ exist to avoid, so we omit them and note the omission.
 % This answers the instructor's question: is a custom model still needed?
 The research question this project inherits was posed in 2022. Before building a
 dedicated parser it is therefore worth asking whether a current general-purpose
-model already solves the task. We sample 30 sentences from the PPCHY
-\emph{test} split (seed 1, sentences of at most 40 tokens) and prompt Gemini
+model already solves the task. We sample sentences from the PPCHY \emph{test}
+split (seed 1, sentences of at most 40 tokens) --- $20$ for the frontier tier and
+$100$ for the Lite tier, the difference forced by per-model daily API quotas ---
+and prompt Gemini
 \citep{geminiteam-2023-gemini} to return a PPCHY-style bracketed tree at
 temperature 0, given the gold tokenization and instructed to reuse those tokens
-exactly. Few-shot runs draw $k{=}3$ exemplars from the \emph{training} split
-only, so no evaluated sentence is ever shown to the model.
+exactly (the prompts are reproduced in full in Appendix~\ref{app:prompts}).
+Few-shot runs draw $k{=}3$ exemplars from the \emph{training} split
+only, so no evaluated sentence is ever shown to the model.\footnote{\label{fn:pilot}%
+Before settling on this two-tier design we ran one zero-shot pilot on
+\texttt{gemini-3.6-flash} over $30$ test sentences; the daily quota cut it off at
+$22$ answers, so we do not report it as a headline result. For completeness it
+scored $54.67$ labeled and $79.58$ unlabeled F1 on those $22$ sentences --- below
+the best configuration we do report ($55.37$ labeled) and still $20.2$ labeled F1
+below our frozen baseline, so it does not disturb any conclusion here. Its
+unlabeled score does exceed the baseline's labeled score, which is why we do not
+rest any argument on that particular comparison. Raw output is committed as
+\texttt{results/llm\_zeroshot.json}.}
 
 Predictions are scored with the same conventions as the SuPar evaluation
 (preterminals excluded, \textsc{top} and punctuation deleted, co-indexation
@@ -627,12 +640,13 @@ findings hold across both tiers.
 
 First, \textbf{no configuration approaches a trained parser.} The best cell is
 the frontier model with exemplars, at $55.37$ labeled F1 --- $19.5$ points below
-our frozen-encoder baseline and $26.7$ below our best adapted parser. Its
-\emph{unlabeled} F1 ($74.38$) does not reach even the baseline's \emph{labeled} F1
-($74.89$), narrowly but consistently: the
-parser assigns full function-tagged labels more accurately than the language
-model draws unlabeled brackets. A dedicated parser is therefore not made
-redundant by current general-purpose models, and the margin is not marginal.
+our frozen-encoder baseline and $26.7$ below our best adapted parser. Its \emph{unlabeled} F1
+($74.38$) lands just under the baseline's \emph{labeled} F1 ($74.89$) --- a
+striking comparison, but one we decline to lean on: $0.51$ points is the same
+size as the seed-to-seed variation we measure in Appendix~\ref{app:seeds}, and an
+earlier pilot on a newer model exceeded it (footnote~\ref{fn:pilot}). The
+$19.5$-point labeled gap is the claim that survives scrutiny, and it is not
+marginal.
 
 Second, \textbf{exemplars help, and the effect replicates.} Labeled F1 rises
 $+9.8$ points on the frontier tier and $+13.0$ on the Lite tier. Per sentence,
@@ -642,9 +656,10 @@ $p<0.001$), and on the frontier tier wins on 10 of 20 and loses on 2
 
 Third, and least expected, \textbf{most of that gain is instruction-following
 rather than parsing.} Token fidelity -- reproducing the supplied tokens exactly
--- rises from 44\% to 71\% on the Lite tier and 70\% to 84\% on the frontier
-tier, and answers that fail it score near the floor (13.9 LF on Lite, versus
-51.2 for faithful answers). Restricting the comparison to token-faithful answers
+-- rises from 44\% to 71\% on the Lite tier and 70\% to 85\% on the frontier
+tier, and answers that fail it score near the floor (in the Lite 3-shot condition,
+$13.9$ mean per-sentence LF against $51.2$ for faithful answers; all other
+figures here are corpus-level). Restricting the comparison to token-faithful answers
 shrinks the few-shot gain from $+13.0$ to $+4.94$ on Lite and from $+9.8$ to
 $+4.90$ on the frontier tier. That the two residuals agree to $0.04$ points, while
 the raw gains differ by more than three, is the clearest statement of the result:
@@ -952,7 +967,11 @@ Appendix~\ref{app:labels}, and a corrected prompt is an obvious follow-up.
 
 \section{LLM Label Confusions}
 \label{app:labels}
-Of 152 constituents predicted across the 22 scored zero-shot answers, 19
+These counts come from the pilot run described in footnote~\ref{fn:pilot}
+(\texttt{gemini-3.6-flash}, zero-shot, $30$ sentences attempted and $22$ returned
+before the daily quota cut it off), not from the tiers in
+Table~\ref{tab:llm}; it is the only run for which we did a manual label audit.
+Of 152 constituents predicted across those 22 scored answers, 19
 (12.5\%) carry labels absent from this treebank's inventory: \textsc{np-ob1}
 (11), \textsc{np-ob2} (2), \textsc{*t*} (2), and one each of \textsc{cp-que},
 \textsc{np-ob1-rsp}, \textsc{np-dat} and \textsc{cp-que-spe}. These are

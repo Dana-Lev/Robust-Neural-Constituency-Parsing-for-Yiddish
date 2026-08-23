@@ -27,3 +27,10 @@ Labeled P/R and macro LF:
 | gemini-3.6-flash zero-shot | 51.97 | 57.66 | 51.55 |
 
 > Coverage below 100% (API quota, not model failure) in: llm_zeroshot.json (73.33%). State this in the report.
+
+**The `gemini-3.6-flash` row is a superseded pilot**, not a reported result: it
+predates the two-tier design, covers a different sample (30 attempted / 22
+returned), and never reached full coverage. The paper reports the four
+`gemini-3.5-*` conditions and describes this run in a footnote. Note that its
+unlabeled F1 (79.58) exceeds the trained baseline's *labeled* F1 (74.89) — which
+is why the report makes its case on the labeled gap alone.

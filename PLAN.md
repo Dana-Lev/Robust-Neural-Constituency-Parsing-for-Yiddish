@@ -1,132 +1,95 @@
 # Project plan — Yiddish parsing via subword regularization & PEFT
 
-**Deadline: September 30, 2026** (today: Aug 18 → ~6 weeks).
-Team: **Dana** (cluster + experiments) and **Ayala** (LLM baseline + writing lead).
-Both: analysis, discussion, proofreading. Swap roles wherever it makes sense —
-the split below balances the load, not ownership.
+**Deadline: September 30, 2026.** Last updated: August 23, 2026.
+Team: **Dana Lev** and **Ayala May**.
 
-The scientific goal (from the proposal): test whether the subword-fragmentation
-bottleneck can be fixed **dynamically** (BPE-dropout-style regularization) or
-**parameter-efficiently** (MAD-X-style adapters), benchmarked against the frozen
-baseline and the previous project's static FOCUS+DAPT result (83.81 / 83.02 LF).
-Plus the instructor's addition: check whether **frontier LLMs already solve this**
-zero-/few-shot (`testing.py`).
+**Status: all experiments are finished.** Every number in the report is a real
+measurement with committed raw output behind it. What remains is writing,
+review, and the final compile.
 
 ---
 
-## Week 1 (Aug 18–24) — setup & sanity
+## Done
 
-**Dana**
-- [ ] Fill the Slurm access form (guidelines §2.2, PI/lab = "NLP class 2025/2026"),
-      confirm login on `studentkillable`.
-- [ ] Set up storage under `/home/morg/NLP_2526b/<user>`: conda env `yiddish`
-      (`supar==1.1.4`, `transformers`, `peft>=0.7.0`, `sentencepiece`, `nltk`),
-      point `HF_HOME` there. The slurm script now reads `NLP_STORAGE`.
-- [ ] Rebuild the data: clone `ppchyprep`, run the `ppchy_formatting` scripts →
-      `split_supar_data.py` → `clean_tree_data.py`. Record the actual
-      train/dev/test counts (the report table must use *your* numbers).
-- [ ] Run `python src/train_parser_peft.py --selftest --encoder-path skulick/xlmb-ybc-ck05`
-      for both backends (`--backend spm`, `--backend maxmatch`). Save the fertility
-      output — it becomes a table in the report.
-- [ ] **Sanity overfit** (rubric requirement): train on ~100 sentences, confirm
-      train F1 ≈ 100. Keep the log.
-- [ ] Launch the baseline run: `sbatch src/parser_train_peft.slurm baseline`.
+### Data
+- PPCHY rebuilt from `ppchyprep` through `build_final_trees.py` →
+  `split_supar_data.py` → `clean_tree_data.py`. Splits: 15,394 / 855 / 856
+  trees (190,007 tokens), 226 labels after stripping co-indexation. No tree
+  rejected by the cleaning step.
+- Statistics and per-split subword fertility: `results/dataset_stats.md`.
+- Provenance per split tree recorded by `scripts/split_provenance.py`, so a
+  per-component breakdown is recoverable without retraining.
 
-**Ayala**
-- [ ] Get a Gemini API key (if free-tier limits are too tight for ~70 requests/run,
-      email the lecturer for API credits — guidelines §2.2 explicitly offers this;
-      include group names/IDs, title, cost estimate, justification).
-- [ ] Smoke-test `testing.py` with no `--data` (pilot mode) — checks the API,
-      retry loop, and JSON output end to end.
-- [ ] Create the Overleaf project from `report/` (main.tex compiles as-is).
-- [ ] Read Kulick et al. 2022 + Provilkov 2020 + Pfeiffer 2020 closely; collect
-      notes for Background (lit review is 20 pts).
+### Infrastructure
+- Both approaches implemented as **runtime patches** over SuPar 1.1.4 — no file
+  under `supar/` edited. Design and patch seams: `PEFT_INTEGRATION.md`.
+- Segmentation sampler verified before spending GPU hours:
+  `results/selftest_maxmatch.txt` (fertility 2.04 → 2.55, 31.7% of words
+  varying between epochs).
+- **Sanity overfit** (rubric requirement): 97.99 LF on a 100-sentence subset —
+  `results/sanity_overfit.txt`. This is what licenses reading a flat cell as a
+  property of the intervention rather than a broken setup.
 
-## Week 2 (Aug 25–31) — main experiment grid
+### Experiment grid — all five cells, one code path, seed 1
+| Cell | LF | Raw output |
+|---|---:|---|
+| Frozen baseline | 74.89 | `results/eval_baseline.txt` |
+| + Subword regularization (maxmatch) | 75.32 | `results/eval_bpe-dropout_maxmatch.txt` |
+| + Adapters (LoRA r=16) | 82.02 | `results/eval_adapters_lora.txt` |
+| + Adapters (Pfeiffer bottleneck) | 82.09 | `results/eval_adapters_bottleneck.txt` |
+| + Both | 81.24 | `results/eval_both_lora_maxmatch.txt` |
 
-**Dana** — run and evaluate all cells (one code path, seed 1):
-- [ ] `baseline` (done from week 1 — evaluate)
-- [ ] `bpe-dropout --backend spm`
-- [ ] `bpe-dropout --backend maxmatch`
-- [ ] `adapters --adapter-type lora`
-- [ ] `adapters --adapter-type bottleneck`
-- [ ] `both --adapter-type lora`
-- [ ] Evaluate each with `evaluate_peft.py` (never `Parser.load` directly for
-      adapter checkpoints); log UF/LF/UCM/LCM into a shared results sheet.
-- [ ] Save training curves (dev F1 per epoch) from the logs for figures.
+### Seed replication
+Baseline and LoRA retrained at seed 2 (`eval_*_seed2.txt`). Spread is 0.22 LF
+(baseline) and 0.51 LF (LoRA); the adapter gain replicates at +6.84 against
++7.13. This is what let us say the +0.43 subword gain is below detection rather
+than merely small.
 
-**Ayala** — the LLM control experiment (the instructor's question):
-- [ ] Copy `supar_ready/test.txt` + `train.txt` from the cluster to run locally.
-- [ ] Zero-shot: `python testing.py --data .../test.txt --n 30`
-- [ ] Few-shot: `python testing.py --data .../test.txt --n 30 --shots 3 --train-file .../train.txt`
-- [ ] Same two runs with a second model if accessible (e.g. a GPT-4-class model —
-      requires adding an OpenAI branch, or just note it as future work).
-- [ ] Record exact model IDs + access dates (API models drift; the report must say).
-- [ ] Draft **Introduction** and **Background** sections in Overleaf.
+### Frontier-LLM control
+Four reported conditions across two Gemini tiers, all at 100% coverage
+(`results/llm_comparison.md`), plus one superseded pilot documented in a
+footnote. Best configuration: 55.37 LF, 19.5 below the frozen baseline.
 
-## Week 3 (Sept 1–7) — robustness & writing
-
-**Dana**
-- [ ] Adapter-LR sweep on the best adapter cell: `--adapter-lr 1e-4 / 3e-4 / 1e-3`
-      (a flat adapter result at 5e-5-ish rates is an under-training artifact, not
-      a finding).
-- [ ] Seeds 2 and 3 for baseline + the two most interesting cells → mean±std
-      (rubric: "always account for randomness").
-- [ ] Optional stretch: `--n-bert-layers 12` baseline to connect to the previous
-      project's 83.81 configuration.
-
-**Ayala**
-- [ ] Draft **Methodology** (incl. the LLM-control subsection) and **Experimental
-      Setup**.
-- [ ] Build figures as **PDF**: results bar chart, one training-curve plot,
-      optionally one gold-vs-predicted tree; large fonts.
-- [ ] Dataset statistics table from Dana's week-1 counts.
-
-## Week 4 (Sept 8–14) — results & discussion
-
-**Both**
-- [ ] Freeze the numbers; fill Tables 1–2 in the report.
-- [ ] Write **Results** (Dana leads parser tables, Ayala leads LLM table).
-- [ ] Write **Discussion** together — this is where the grade lives. Whatever the
-      outcome, the story is strong: either dynamic adaptation helps where static
-      injection didn't, or three independent interventions all fail to move
-      frozen-encoder parsing F1 → constituency parsing is resilient to subword
-      fragmentation, and PEFT reaches the same F1 at ~1–2M trainable params with
-      no pre-training. Relate the LLM numbers to the 83+ LF parser: does a
-      generalist model make the custom parser unnecessary? Use token-fidelity and
-      unlabeled-F1 to separate "doesn't know Yiddish" from "doesn't know PPCHY".
-
-## Week 5 (Sept 15–21) — full draft
-
-- [ ] Abstract + Conclusion + Limitations (both).
-- [ ] **AI Disclosure and Reflection** — mandatory section; be concrete about
-      what was AI-assisted (proposal brainstorming, PEFT integration code, the
-      LLM-baseline script, LaTeX) and what you verified yourselves.
-- [ ] Self-grade against the rubric: research question / ambition / lit review /
-      methodology / results / presentation (each 10–20 pts).
-- [ ] Check: ≤8 pages excl. references+appendix; every citation via \citet/\citep;
-      figures are PDFs; no work-log style writing ("we tried X, it failed…").
-
-## Week 6 (Sept 22–29) — buffer & submit
-
-- [ ] Buffer for re-runs, proofread, final compile check.
-- [ ] Push code to a clean GitHub repo (reproducibility is graded); README with
-      exact commands. **Make sure no API key is anywhere in the history.**
-- [ ] Submit by **Sept 30**.
+### Report
+All sections written with real numbers: Abstract, Introduction, Background,
+Methodology, Experimental Setup, Results, Discussion, Conclusion, Limitations,
+and four appendices (hyperparameters, seed replication, prompts, label
+confusions).
 
 ---
 
-## Risks / gotchas
+## Left to do
 
-- **Cluster queue**: `studentkillable` jobs get preempted near deadlines — start
-  the grid in week 2, not week 5.
-- **Storage quota**: don't checkpoint every 500 steps; SuPar saves best-only by
-  default — keep it that way.
-- **Gemini rate limits**: free tier ≈ 5 req/min; a 30-sentence run takes ~7 min +
-  retries. If quota blocks few-shot runs, email the lecturer early (week 1).
-- **Data provenance**: report numbers only from the real `supar_ready` splits.
-  The 30 hardcoded sentences in `testing.py` are synthetic pilot data — never
-  report them as PPCHY.
-- **Comparability**: your baseline (4 layers, mean pooling) is not bit-identical
-  to the previous project's published 83.81 (they report 12 layers). Compare
-  against *your own* baseline in the main table; cite theirs as reference rows.
+| # | Task | Owner | Notes |
+|---|---|---|---|
+| 1 | **Review the AI Disclosure section** | Dana | `report/main.tex` — the draft is an AI-written account of the collaboration. Rewrite anything that does not match your own recollection; you own every claim in it. **Mandatory section.** |
+| 2 | **Compile on Overleaf** | either | Nothing in `main.tex` has been through a compiler yet. Check the ≤8-page body limit (references and appendices excluded) and that no table floats away from its section. |
+| 3 | Full proofread | both | Read for work-log phrasing ("we tried X, it failed") — the guidelines penalise it. |
+| 4 | Self-grade against the rubric | both | Research question / ambition / lit review / methodology / results / presentation. |
+| 5 | Optional figures | either | Three `\todo` markers, all optional: an example tree, a training curve from the per-epoch dev scores, a Gemini failure case. Cut them if the page limit bites. |
+| 6 | **Revoke the exposed Gemini API key** | Dana | It was hardcoded in an early `testing.py`. Not in the current file, but it was live. |
+| 7 | Final submission | both | Sept 30. |
+
+### Deliberately not run
+Documented in RUNBOOK Step 6b so nobody assumes these exist:
+
+- **Adapter learning-rate sweep.** Insurance against "adapters don't help" being
+  an under-training artifact. The adapters gained ~7 LF at 3e-4, so the
+  insurance was never needed. The report does **not** claim a sweep was done.
+- **Seed 3**, and a 12-layer scalar-mix baseline.
+
+---
+
+## Risks / gotchas that still apply
+
+- **Page limit.** Body must be ≤8 pages. The report is dense and has never been
+  compiled. This is the most likely late surprise — check it early, not on
+  Sept 29.
+- **No API key anywhere in the repo or its history.** Reproducibility is graded,
+  and a leaked key is worse than a lost point.
+- **Report numbers only from the real `supar_ready` splits.** `testing.py`
+  without `--data` falls back to 30 synthetic sentences; those must never be
+  reported as PPCHY results.
+- **`evaluate_peft.py`, never `Parser.load`, for adapter checkpoints.** SuPar
+  loads with `strict=False` and will silently drop adapter *and* backbone
+  tensors, then print a confident number from a partly random encoder.
