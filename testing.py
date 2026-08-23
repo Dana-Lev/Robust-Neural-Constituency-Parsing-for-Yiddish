@@ -516,6 +516,11 @@ def main():
     # 30 sentences and records match up by id.
     previous = {}
     if args.resume:
+        # Write back to the file being resumed unless an --out was given
+        # explicitly. Otherwise a top-up silently lands in the default filename
+        # and the original keeps its incomplete summary.
+        if args.out == ap.get_default("out"):
+            args.out = args.resume
         with open(args.resume, encoding="utf-8") as handle:
             prior = json.load(handle)
         for record in prior["results"]:
