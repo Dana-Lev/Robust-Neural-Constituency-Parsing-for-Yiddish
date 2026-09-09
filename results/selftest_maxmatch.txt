@@ -1,0 +1,37 @@
+
+==================================================================
+SUBWORD REGULARIZATION SELF-TEST
+==================================================================
+  n_words                          5000
+  backend                          maxmatch
+  deterministic_fertility          2.053
+  sampled_fertility                2.579
+  mean_distinct_segmentations      1.395
+  pct_words_with_variation         31.32
+  max_pieces_observed              14
+------------------------------------------------------------------
+  ענטפֿערט
+      deterministic: ['▁', 'ענט', 'פֿ', 'ערט']
+      sampled:       ['▁', 'ענט', 'פֿ', 'ערט']
+  אים
+      deterministic: ['▁אים']
+      sampled:       ['▁אים']
+  דוד
+      deterministic: ['▁דוד']
+      sampled:       ['▁דוד']
+  :
+      deterministic: ['▁:']
+      sampled:       ['▁:']
+  "
+      deterministic: ['▁"']
+      sampled:       ['▁"']
+  מילא
+      deterministic: ['▁מי', 'לא']
+      sampled:       ['▁מי', 'לא']
+  אַז
+      deterministic: ['▁אַז']
+      sampled:       ['▁אַז']
+  די
+      deterministic: ['▁די']
+      sampled:       ['▁די']
+==================================================================

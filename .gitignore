@@ -1,0 +1,71 @@
+# --- Never commit credentials ---
+.env
+*.key
+**/api_key*
+
+# stray results file written outside results/
+/llm_baseline_results.json
+
+# --- Corpora and derived data (not redistributed; see yiddish_parser/data/README.md) ---
+yiddish_parser/data/raw/
+yiddish_parser/data/processed/
+!yiddish_parser/data/README.md
+
+# --- Model checkpoints, outputs, logs ---
+*.pt
+*.pth
+*.ckpt
+*.bin
+*.safetensors
+output/
+checkpoints/
+logs/
+wandb/
+runs/
+
+# --- LaTeX build artifacts ---
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.synctex.gz
+*.fdb_latexmk
+*.fls
+*.toc
+report/main.pdf
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+venv/
+env/
+.venv/
+.ipynb_checkpoints/
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Keep the committed evidence trail in results/ (see results/README.md)
+!results/
+!results/*.md
+!results/*.txt
+!results/*.json
+
+# Conda installer downloaded during setup (197MB)
+miniconda.sh
+Miniconda3-*.sh
+
+# --- Local scratch ---
+scratch/
+tmp/
+supar_source/

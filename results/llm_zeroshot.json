@@ -1,0 +1,485 @@
+{
+  "summary": {
+    "model": "gemini-3.6-flash",
+    "shots": 0,
+    "data": "yiddish_parser/data/processed/supar_ready/test.txt",
+    "seed": 1,
+    "n_sentences_attempted": 30,
+    "n_responses_received": 22,
+    "n_api_failures": 8,
+    "coverage_rate": 73.33,
+    "valid_syntax_rate": 100.0,
+    "token_fidelity_rate": 95.45,
+    "macro_labeled_f1": 51.55,
+    "labeled_precision": 51.97,
+    "labeled_recall": 57.66,
+    "labeled_f1": 54.67,
+    "unlabeled_precision": 75.66,
+    "unlabeled_recall": 83.94,
+    "unlabeled_f1": 79.58
+  },
+  "results": [
+    {
+      "id": "test.txt:138",
+      "sentence": "דען װאַס װער אַלס ניץ גיװעסט דער_װײל דז הקבה האַט יו אַלס פֿון זײנם קבוד װעגן בישפֿן",
+      "gold_tree": "(TOP (CP-QUE-MAT (CONJ דען) (WNP-1 (WPRO װאַס)) (IP-SUB (BEF װער) (NP-SBJ (Q אַלס)) (ADJP-PRD (ADJ ניץ)) (VBN גיװעסט) (CP-ADV (ADV דער_װײל) (C דז) (IP-SUB (NP-SBJ (H הקבה)) (HVF האַט) (ADVP-DIAGN (ADV יו)) (NP-ACC (Q אַלס)) (PP (P פֿון) (NP (NP-COM (PRO$ זײנם) (N קבוד)) (N װעגן))) (VBN בישפֿן))))))",
+      "predicted_tree": "(IP-MAT (CONJ דען)\n        (WNP (WPRO װאַס))\n        (MD װער)\n        (NP-SBJ (Q אַלס))\n        (ADJP-PRD (ADJ ניץ))\n        (VBN גיװעסט)\n        (CP-ADV (ADVP-TMP (ADV דער_װײל))\n                (C דז)\n                (IP-SUB (NP-SBJ (NPR הקבה))\n                        (HVF האַט)\n                        (ADVP (ADV יו))\n                        (NP-OB1 (Q אַלס))\n                        (PP (P פֿון)\n                            (NP (PRO$ זײנם)\n                                (N קבוד))\n                            (P װעגן))\n                        (VBN בישפֿן))))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.5599999999999999,
+      "unlabeled_f1": 0.8799999999999999,
+      "error": null,
+      "counts": {
+        "labeled_match": 7,
+        "unlabeled_match": 11,
+        "gold_count": 13,
+        "pred_count": 12
+      }
+    },
+    {
+      "id": "test.txt:588",
+      "sentence": "זײן גיװעזין אױס גליל סל מיץ",
+      "gold_tree": "(TOP (IP-MAT (BEF זײן) (VBN גיװעזין) (PP (P אױס) (NP (H גליל) (H סל) (NPR מיץ)))))",
+      "predicted_tree": "(IP-MAT (VP (BE זײן) (VP (BEN גיװעזין) (PP (P אױס) (NP (NPR גליל) (NPR סל) (NPR מיץ))))))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.7499999999999999,
+      "unlabeled_f1": 0.7499999999999999,
+      "error": null,
+      "counts": {
+        "labeled_match": 3,
+        "unlabeled_match": 3,
+        "gold_count": 3,
+        "pred_count": 5
+      }
+    },
+    {
+      "id": "test.txt:829",
+      "sentence": "װאָס באַדאַרף זי זיצן אַלײן",
+      "gold_tree": "(TOP (CP-QUE-MAT (WNP-1 (WPRO װאָס)) (IP-SUB (MDF באַדאַרף) (NP-SBJ (PRO זי)) (VB זיצן) (ADJP-SPR (ADJ אַלײן)))))",
+      "predicted_tree": "(CP-QUE (WADV װאָס)\n        (IP-SUB (VBP באַדאַרף)\n                (NP-SBJ (PRO זי))\n                (IP-INF (VB זיצן)\n                        (ADVP (ADV אַלײן)))))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.4000000000000001,
+      "unlabeled_f1": 0.8000000000000002,
+      "error": null,
+      "counts": {
+        "labeled_match": 2,
+        "unlabeled_match": 4,
+        "gold_count": 5,
+        "pred_count": 5
+      }
+    },
+    {
+      "id": "test.txt:790",
+      "sentence": "\" עס \" איז דער סוביעקט , רעגנט דער פּרעדיקאַט .",
+      "gold_tree": "(TOP (IP-MAT (IP-MAT-1 (NP-SBJ (PUNC \") (META (ES עס))) (PUNC \") (VBF איז) (NP-PRD (D דער) (N סוביעקט))) (PUNC ,) (CONJP (IP-MAT=1 (NP-SBJ (META (VBF רעגנט))) (NP-PRD (D דער) (N פּרעדיקאַט)))) (PUNC .)))",
+      "predicted_tree": "(IP-MAT (CP-ADV (IP-SUB (NP-SBJ (\" \") (PRO עס) (\" \"))\n                        (BEP איז)\n                        (NP-PRD (D דער) (N סוביעקט))))\n        (, ,)\n        (VBP רעגנט)\n        (NP-SBJ (D דער) (N פּרעדיקאַט))\n        (. .))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.25,
+      "unlabeled_f1": 0.5,
+      "error": null,
+      "counts": {
+        "labeled_match": 2,
+        "unlabeled_match": 4,
+        "gold_count": 10,
+        "pred_count": 6
+      }
+    },
+    {
+      "id": "test.txt:65",
+      "sentence": "פֿאַר אים איז דער סמירנער מקובל טאַקע דער ייִדישער מלך",
+      "gold_tree": "(TOP (IP-MAT (PP (P פֿאַר) (NP (PRO אים))) (VBF איז) (NP-SBJ (D דער) (ADJ סמירנער) (N מקובל)) (ADVP (ADV טאַקע)) (NP-PRD (D דער) (ADJ ייִדישער) (N מלך))))",
+      "predicted_tree": "(IP-MAT (PP (P פֿאַר)\n            (NP (PRO אים)))\n        (BEPI איז)\n        (NP-SBJ (D דער)\n                (ADJ סמירנער)\n                (N מקובל))\n        (ADVP (ADV טאַקע))\n        (NP-PRD (D דער)\n                (ADJ ייִדישער)\n                (N מלך)))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 1.0,
+      "unlabeled_f1": 1.0,
+      "error": null,
+      "counts": {
+        "labeled_match": 6,
+        "unlabeled_match": 6,
+        "gold_count": 6,
+        "pred_count": 6
+      }
+    },
+    {
+      "id": "test.txt:264",
+      "sentence": "אונ' האַבן אין גיהרגט",
+      "gold_tree": "(TOP (IP-MAT (CONJ אונ') (HVF האַבן) (NP-ACC (PRO אין)) (VBN גיהרגט)))",
+      "predicted_tree": "(IP-MAT (CONJ אונ') (HVP האַבן) (VP (NP-OB1 (PRO אין)) (VBN גיהרגט)))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.4,
+      "unlabeled_f1": 0.8,
+      "error": null,
+      "counts": {
+        "labeled_match": 1,
+        "unlabeled_match": 2,
+        "gold_count": 2,
+        "pred_count": 3
+      }
+    },
+    {
+      "id": "test.txt:121",
+      "sentence": "די ערד װר אַלי דינגן די מכט ער אײטל לײז דרום דז די ערד איז עיִקור",
+      "gold_tree": "(TOP (IP-MAT (NP-LFD (D די) (N ערד) (PP (P װר) (NP (Q אַלי) (N דינגן)))) (NP-RSP-1 (D די)) (VBF מכט) (NP-SBJ (PRO ער)) (IP-SMC (NP-PRD (ADJ אײטל) (N לײז))) (PP (DR+P דרום) (CP-THT (C דז) (IP-SUB (NP-SBJ (D די) (N ערד)) (VBF איז) (ADJP-PRD (ADJ עיִקור)))))))",
+      "predicted_tree": "(IP-MAT (NP-LFD (D די) (N ערד) (PP (P װר) (NP (Q אַלי) (NS דינגן)))) (NP-OB1-RSP (D די)) (VFIN מכט) (NP-SBJ (PRO ער)) (ADJP-PRD (ADV אײטל) (ADJ לײז)) (ADVP (ADV דרום) (CP-ADV (C דז) (IP-SUB (NP-SBJ (D די) (N ערד)) (VFIN איז) (NP-PRD (N עיִקור))))))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.5599999999999999,
+      "unlabeled_f1": 0.9600000000000001,
+      "error": null,
+      "counts": {
+        "labeled_match": 7,
+        "unlabeled_match": 12,
+        "gold_count": 13,
+        "pred_count": 12
+      }
+    },
+    {
+      "id": "test.txt:513",
+      "sentence": "אפֿשר װאָלטן זיך די קינדער עפּעס op@ @gelernt .",
+      "gold_tree": "(TOP (IP-MAT (ADVP (ADV אפֿשר)) (VLF װאָלטן) (NP-RFL (PRO זיך)) (NP-SBJ (D די) (N קינדער)) (NP-ACC (Q עפּעס)) (RP op@) (VBN @gelernt) (PUNC .)))",
+      "predicted_tree": "(IP-MAT (ADVP (ADV אפֿשר))\n        (MD װאָלטן)\n        (NP-RFL (PRO זיך))\n        (NP-SBJ (D די) (NS קינדער))\n        (VP (NP-OB1 (Q עפּעס))\n            (RP op@)\n            (VBN @gelernt))\n        (. .))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.7272727272727272,
+      "unlabeled_f1": 0.9090909090909091,
+      "error": null,
+      "counts": {
+        "labeled_match": 4,
+        "unlabeled_match": 5,
+        "gold_count": 5,
+        "pred_count": 6
+      }
+    },
+    {
+      "id": "test.txt:787",
+      "sentence": "דר_װײל דז איך האַב גיזעהן פֿר מיר מנהגים די מיר ניט גיפֿלן האַבן",
+      "gold_tree": "(TOP (CP-ADV (ADV דר_װײל) (C דז) (IP-SUB (NP-SBJ (PRO איך)) (HVF האַב) (VBN גיזעהן) (PP (P פֿר) (NP (PRO מיר))) (NP-ACC (N מנהגים) (CP-REL (WNP-1 (WPRO די)) (IP-SUB (NP-DTV (PRO מיר)) (NEG ניט) (VBN גיפֿלן) (HVF האַבן)))))))",
+      "predicted_tree": "(CP-ADV (P דר_װײל) (C דז) (IP-SUB (NP-SBJ (PRO איך)) (VBF האַב) (VP (VBN גיזעהן) (PP (P פֿר) (NP (PRO מיר))) (NP-OB1 (N מנהגים) (CP-REL (WNP (WPRO די)) (IP-SUB (NP-OB2 (PRO מיר)) (ADVP (ADV ניט)) (VP (VBN גיפֿלן)) (VBF האַבן)))))))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.6956521739130435,
+      "unlabeled_f1": 0.8695652173913044,
+      "error": null,
+      "counts": {
+        "labeled_match": 8,
+        "unlabeled_match": 10,
+        "gold_count": 10,
+        "pred_count": 13
+      }
+    },
+    {
+      "id": "test.txt:466",
+      "sentence": "און לײג זיך מיר װײַטער אױף דער װעראַנדע .",
+      "gold_tree": "(TOP (IP-MAT (CONJ און) (VBF לײג) (NP-RFL (PRO זיך)) (NP-DTV (PRO מיר)) (ADVP (ADV װײַטער)) (PP (P אױף) (NP (D דער) (N װעראַנדע))) (PUNC .)))",
+      "predicted_tree": "( (IP-IMP (CONJ און)\n          (VB לײג)\n          (NP-RFL (PRO-RFL זיך))\n          (NP-DAT (PRO מיר))\n          (ADVP (ADV װײַטער))\n          (PP (P אױף)\n              (NP (D דער)\n                  (N װעראַנדע)))\n          (. .)) )",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.6666666666666666,
+      "unlabeled_f1": 1.0,
+      "error": null,
+      "counts": {
+        "labeled_match": 4,
+        "unlabeled_match": 6,
+        "gold_count": 6,
+        "pred_count": 6
+      }
+    },
+    {
+      "id": "test.txt:489",
+      "sentence": "אױך zals@ @tu אױס שפּרעכין איסור רהטר אין דער גמראַ מסכטט קרטין מיט זעקס_ונ_דרײסיג בלעטיר",
+      "gold_tree": "(TOP (IP-MAT (ADVP (ADV אױך)) (MDF zals@) (NP-SBJ (PRO @tu)) (RP אױס) (VB שפּרעכין) (NP-ACC (H איסור) (H רהטר)) (PP (P אין) (D דער) (N גמראַ)) (XX (H מסכטט) (NP (N קרטין) (PP (P מיט) (NP (NUM זעקס_ונ_דרײסיג) (N בלעטיר)))))))",
+      "predicted_tree": "(IP-MAT (ADVP (ALSO אױך))\n        (MD zals@)\n        (NP-SBJ (PRO @tu))\n        (VP (RP אױס)\n            (VB שפּרעכין)\n            (NP-OB1 (N איסור) (N רהטר))\n            (PP (P אין)\n                (NP (D דער)\n                    (N גמראַ)\n                    (NP-PRN (N מסכטט) (NPR קרטין))))\n            (PP (P מיט)\n                (NP (NUM זעקס_ונ_דרײסיג) (NS בלעטיר)))))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.5263157894736842,
+      "unlabeled_f1": 0.631578947368421,
+      "error": null,
+      "counts": {
+        "labeled_match": 5,
+        "unlabeled_match": 6,
+        "gold_count": 9,
+        "pred_count": 10
+      }
+    },
+    {
+      "id": "test.txt:673",
+      "sentence": "װאָס טוט איר דאָ אײגענטלעך אױף דעם יריד ? \"",
+      "gold_tree": "(TOP (CP-QUE-MAT-SPE (WNP-1 (WPRO װאָס)) (IP-SUB-SPE (VBF טוט) (NP-SBJ (PRO איר)) (ADVP (ADV דאָ)) (ADVP (ADV אײגענטלעך)) (PP (P אױף) (NP (D דעם) (N יריד)))) (PUNC ?) (PUNC \")))",
+      "predicted_tree": "(CP-QUE-MAT (WNP-1 (WPRO װאָס))\n            (IP-SUB (VBP טוט)\n                    (NP-SBJ (PRO איר))\n                    (NP-OB1 (*T*-1))\n                    (ADVP-LOC (ADV דאָ))\n                    (ADVP (ADV אײגענטלעך))\n                    (PP (P אױף)\n                        (NP (D דעם)\n                            (N יריד))))\n            (. ?)\n            ('' \"))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.5555555555555556,
+      "unlabeled_f1": 0.888888888888889,
+      "error": null,
+      "counts": {
+        "labeled_match": 5,
+        "unlabeled_match": 8,
+        "gold_count": 8,
+        "pred_count": 10
+      }
+    },
+    {
+      "id": "test.txt:394",
+      "sentence": "\" גױיִשע קאָפּ ! אישאָ אַ װאַ...",
+      "gold_tree": "(TOP (QTP (PUNC \") (NP-VOC (ADJ גױיִשע) (N קאָפּ)) (PUNC !) (H אישאָ) (NP (D אַ) (N װאַ...))))",
+      "predicted_tree": "( (FRAG (NP-VOC (ADJ גױיִשע) (N קאָפּ)) (. !) (INTJ אישאָ) (NP (D אַ) (N װאַ...))) )",
+      "valid_syntax": true,
+      "tokens_match": false,
+      "labeled_f1": 0.0,
+      "unlabeled_f1": 0.0,
+      "error": null,
+      "counts": {
+        "labeled_match": 0,
+        "unlabeled_match": 0,
+        "gold_count": 3,
+        "pred_count": 3
+      }
+    },
+    {
+      "id": "test.txt:815",
+      "sentence": "אײנער אַ ייִד האָט אַמאָל געטאָן אַ שידוך מיט זײַנעם אַ זון מיט עפּעס אַ ניט קײן בעקאָװעדן מחותּן .",
+      "gold_tree": "(TOP (IP-MAT (NP-SBJ (D אײנער) (D אַ) (N ייִד)) (HVF האָט) (ADVP-TMP (ADV אַמאָל)) (VBN געטאָן) (NP-ACC (D אַ) (N שידוך) ) (PP (P מיט) (NP (PRO$ זײַנעם) (D אַ) (N זון))) (PP-1 (P מיט) (NP (Q עפּעס) (D אַ) (ADJP (NEG ניט) (Q קײן) (ADJ בעקאָװעדן)) (N מחותּן))) (PUNC .)))",
+      "predicted_tree": "(IP-MAT (NP-SBJ (PRO אײנער)\n                (NP (D אַ)\n                    (N ייִד)))\n        (HVP האָט)\n        (ADVP-TMP (ADV אַמאָל))\n        (VP (DON געטאָן)\n            (NP-OB1 (D אַ)\n                    (N שידוך))\n            (PP (P מיט)\n                (NP (PRO$ זײַנעם)\n                    (D אַ)\n                    (N זון)))\n            (PP (P מיט)\n                (NP (Q עפּעס)\n                    (D אַ)\n                    (ADJP (NEG ניט)\n                          (D קײן))\n                    (ADJ בעקאָװעדן)\n                    (N מחותּן))))\n        (. .))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.7000000000000001,
+      "unlabeled_f1": 0.7999999999999999,
+      "error": null,
+      "counts": {
+        "labeled_match": 7,
+        "unlabeled_match": 8,
+        "gold_count": 9,
+        "pred_count": 11
+      }
+    },
+    {
+      "id": "test.txt:215",
+      "sentence": "צינע : נו ?",
+      "gold_tree": "(TOP (FRAG (META (NPR צינע) (PUNC :)) (INTJ נו) (PUNC ?)))",
+      "predicted_tree": "( (FRAG (NP (NPR צינע))\n        (. :)\n        (INTJP (INTJ נו))\n        (. ?)) )",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.4,
+      "unlabeled_f1": 0.4,
+      "error": null,
+      "counts": {
+        "labeled_match": 1,
+        "unlabeled_match": 1,
+        "gold_count": 2,
+        "pred_count": 3
+      }
+    },
+    {
+      "id": "test.txt:97",
+      "sentence": "\" און װײַטער איז דאָ נאָך אַ קלײנער כעסאָרנדל :",
+      "gold_tree": "(TOP (IP-MAT-SPE (PUNC \") (CONJ און) (ADVP (ADV װײַטער)) (VBF איז) (ADVP (ADV דאָ)) (NP-SBJ (ADV נאָך) (D אַ) (ADJ קלײנער) (N כעסאָרנדל)) (PUNC :)))",
+      "predicted_tree": "(IP-MAT (\" \")\n        (CONJ און)\n        (ADVP (ADV װײַטער))\n        (BEP איז)\n        (ADVP-LOC (ADV דאָ))\n        (NP-SBJ (ADV נאָך)\n                (D אַ)\n                (ADJ קלײנער)\n                (N כעסאָרנדל))\n        (: :))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.5,
+      "unlabeled_f1": 1.0,
+      "error": null,
+      "counts": {
+        "labeled_match": 2,
+        "unlabeled_match": 4,
+        "gold_count": 4,
+        "pred_count": 4
+      }
+    },
+    {
+      "id": "test.txt:505",
+      "sentence": "סטערע װײנט אין דער שטיל .",
+      "gold_tree": "(TOP (META (NPR סטערע) (VBF װײנט) (P אין) (D דער) (N שטיל) (PUNC .)))",
+      "predicted_tree": "(IP-MAT (NP-SBJ (NPR סטערע))\n        (VBP װײנט)\n        (PP (P אין)\n            (NP (D דער)\n                (N שטיל)))\n        (. .))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.0,
+      "unlabeled_f1": 0.4,
+      "error": null,
+      "counts": {
+        "labeled_match": 0,
+        "unlabeled_match": 1,
+        "gold_count": 1,
+        "pred_count": 4
+      }
+    },
+    {
+      "id": "test.txt:30",
+      "sentence": "און מע רעדט תּורה ,",
+      "gold_tree": "(TOP (IP-MAT (CONJ און) (NP-SBJ (PRO מע)) (VBF רעדט) (NP-ACC (NPR תּורה)) (PUNC ,)))",
+      "predicted_tree": "(IP-MAT (CONJ און) (NP-SBJ (PRO מע)) (VBP רעדט) (NP-OB1 (N תּורה)) (, ,))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.6666666666666666,
+      "unlabeled_f1": 1.0,
+      "error": null,
+      "counts": {
+        "labeled_match": 2,
+        "unlabeled_match": 3,
+        "gold_count": 3,
+        "pred_count": 3
+      }
+    },
+    {
+      "id": "test.txt:405",
+      "sentence": "האַט ער איר גיִענפֿרט יו איך קען דיך",
+      "gold_tree": "(TOP (IP-MAT (HVF האַט) (NP-SBJ (PRO ער)) (NP-DTV (PRO איר)) (VBN גיִענפֿרט) (IP-MAT-SPE (INTJ יו) (NP-SBJ (PRO איך)) (VBF קען) (NP-ACC (PRO דיך)))))",
+      "predicted_tree": "(IP-MAT (HVPI האַט) (NP-SBJ (PRO ער)) (NP-OB2 (PRO איר)) (VP (VBN גיִענפֿרט) (IP-MAT-SPE (INTJ יו) (NP-SBJ (PRO איך)) (VBPI קען) (NP-OB1 (PRO דיך)))))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.6153846153846153,
+      "unlabeled_f1": 0.923076923076923,
+      "error": null,
+      "counts": {
+        "labeled_match": 4,
+        "unlabeled_match": 6,
+        "gold_count": 6,
+        "pred_count": 7
+      }
+    },
+    {
+      "id": "test.txt:449",
+      "sentence": "און דער גלח זאָל oys@ @fregn דעם ייִדן .",
+      "gold_tree": "(TOP (IP-MAT (CONJ און) (NP-SBJ (D דער) (N גלח)) (MDF זאָל) (RP oys@) (VB @fregn) (NP-ACC (D דעם) (N ייִדן)) (PUNC .)))",
+      "predicted_tree": "(IP-MAT (CONJ און) (NP-SBJ (D דער) (N גלח)) (MD זאָל) (VP (RP oys@) (VB @fregn) (NP-OB1 (D דעם) (N ייִדן))) (. .))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.5714285714285715,
+      "unlabeled_f1": 0.8571428571428571,
+      "error": null,
+      "counts": {
+        "labeled_match": 2,
+        "unlabeled_match": 3,
+        "gold_count": 3,
+        "pred_count": 4
+      }
+    },
+    {
+      "id": "test.txt:628",
+      "sentence": "און מע פֿרעגט דעם חסיד : \" װאָס הײסט עפּעס ?",
+      "gold_tree": "(TOP (IP-MAT (CONJ און) (NP-SBJ (PRO מע)) (VBF פֿרעגט) (NP-DTV (D דעם) (N חסיד)) (PUNC :) (CP-QUE-MAT-SPE (PUNC \") (WNP-1 (WPRO װאָס)) (IP-SUB-SPE (VBF הײסט) (NP-MSR (Q עפּעס)) (PUNC ?)))))",
+      "predicted_tree": "(IP-MAT (CONJ און)\n        (NP-SBJ (PRO מע))\n        (VBP פֿרעגט)\n        (NP-OB1 (D דעם)\n                (N חסיד))\n        (: :)\n        (\" \")\n        (CP-QUE-SPE (WNP-1 (WPRO װאָס))\n                    (IP-SUB-SPE (NP-PRD (*T*-1))\n                                (VBP הײסט)\n                                (NP-SBJ (PRO עפּעס))))\n        (. ?))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.375,
+      "unlabeled_f1": 0.6250000000000001,
+      "error": null,
+      "counts": {
+        "labeled_match": 3,
+        "unlabeled_match": 5,
+        "gold_count": 7,
+        "pred_count": 9
+      }
+    },
+    {
+      "id": "test.txt:788",
+      "sentence": "- דער רבי איז גראָד ניט געװען אין דער הײם ,",
+      "gold_tree": "(TOP (IP-MAT (PUNC -) (NP-SBJ (D דער) (N רבי)) (BEF איז) (ADVP-TMP (ADV גראָד)) (NEG ניט) (VBN געװען) (PP (P אין) (NP (D דער) (N הײם))) (PUNC ,)))",
+      "predicted_tree": null,
+      "valid_syntax": false,
+      "tokens_match": false,
+      "labeled_f1": 0.0,
+      "unlabeled_f1": 0.0,
+      "error": "gave up after 8 rate-limit retries"
+    },
+    {
+      "id": "test.txt:793",
+      "sentence": "טאָמיר װײסין זײ מכמס זײ פֿליִאַין הױך און דעם אור",
+      "gold_tree": "(TOP (IP-MAT-SPE (ADVP (ADV טאָמיר)) (VBF װײסין) (NP-SBJ (PRO זײ)) (CP-ADV-SPE (ADV מכמס) (IP-SUB-SPE (NP-SBJ (PRO זײ)) (VBF פֿליִאַין) (ADVP (ADV הױך) (PP (P און) (NP (D דעם) (N אור))))))))",
+      "predicted_tree": "(IP-MAT (CP-ADV (C טאָמיר)\n                (IP-SUB (VBP װײסין)\n                        (NP-SBJ (PRO-SBJ זײ))\n                        (PP (P מכמס)\n                            (IP-SUB (NP-SBJ (PRO-SBJ זײ))\n                                    (VBP פֿליִאַין)\n                                    (ADVP (ADV הױך))\n                                    (PP (P און)\n                                        (NP (D-D דעם)\n                                            (N אור))))))))",
+      "valid_syntax": true,
+      "tokens_match": true,
+      "labeled_f1": 0.4210526315789474,
+      "unlabeled_f1": 0.7368421052631577,
+      "error": null,
+      "counts": {
+        "labeled_match": 4,
+        "unlabeled_match": 7,
+        "gold_count": 9,
+        "pred_count": 10
+      }
+    },
+    {
+      "id": "test.txt:3",
+      "sentence": "לױפֿט אַרױס . לױ יצחק פֿאַרקוקט זיך אין פֿענצטער , װי ער װאָלט עמעצן באַמערקט ; ער אײַלט tsu@ @m טיש , גראָבט אײַן די אױגן אין סעפֿער .",
+      "gold_tree": "(TOP (META (VBF לױפֿט) (ADV אַרױס) (PUNC .) (NPR לױ) (NPR יצחק) (VBF פֿאַרקוקט) (PRO זיך) (P אין) (N פֿענצטער) (PUNC ,) (C װי) (PRO ער) (VLF װאָלט) (Q עמעצן) (VBN באַמערקט) (PUNC ;) (PRO ער) (VBF אײַלט) (P tsu@) (D @m) (N טיש) (PUNC ,) (VBF גראָבט) (RP אײַן) (D די) (N אױגן) (P אין) (N סעפֿער) (PUNC .)))",
+      "predicted_tree": null,
+      "valid_syntax": false,
+      "tokens_match": false,
+      "labeled_f1": 0.0,
+      "unlabeled_f1": 0.0,
+      "error": "gave up after 8 rate-limit retries"
+    },
+    {
+      "id": "test.txt:719",
+      "sentence": "זי שריִאַן אַל מיט גרוסר מאַכט דער יודן גלאַבן איז גראַכט",
+      "gold_tree": "(TOP (IP-MAT (NP-SBJ (PRO זי)) (VBF שריִאַן) (QP (Q אַל)) (PP (P מיט) (NP (ADJ גרוסר) (N מאַכט))) (IP-MAT-SPE (NP-SBJ (NP-POS (D דער) (N יודן)) (N גלאַבן)) (VBF איז) (ADJP-PRD (ADJ גראַכט)))))",
+      "predicted_tree": null,
+      "valid_syntax": false,
+      "tokens_match": false,
+      "labeled_f1": 0.0,
+      "unlabeled_f1": 0.0,
+      "error": "gave up after 8 rate-limit retries"
+    },
+    {
+      "id": "test.txt:462",
+      "sentence": "צינע : נעמט זי אַרום און קושט זי . נאַר , s'@ @makht נישט אױס .",
+      "gold_tree": "(TOP (IP-MAT (META (NPR צינע) (PUNC :) (VBF נעמט) (PRO זי) (ADV אַרום) (CONJ און) (VBF קושט) (PRO זי) (PUNC .)) (NP-VOC (N נאַר)) (PUNC ,) (NP-SBJ (PRO s'@)) (VBF @makht) (NEG נישט) (RP אױס) (PUNC .)))",
+      "predicted_tree": null,
+      "valid_syntax": false,
+      "tokens_match": false,
+      "labeled_f1": 0.0,
+      "unlabeled_f1": 0.0,
+      "error": "gave up after 8 rate-limit retries"
+    },
+    {
+      "id": "test.txt:276",
+      "sentence": "אַ ייִד איז געגאַנגען oyf@ @n גאַס",
+      "gold_tree": "(TOP (IP-MAT (NP-SBJ (D אַ) (N ייִד)) (BEF איז) (VBN געגאַנגען) (PP (P oyf@) (NP (D @n) (N גאַס)))))",
+      "predicted_tree": null,
+      "valid_syntax": false,
+      "tokens_match": false,
+      "labeled_f1": 0.0,
+      "unlabeled_f1": 0.0,
+      "error": "gave up after 8 rate-limit retries"
+    },
+    {
+      "id": "test.txt:745",
+      "sentence": "דער בעל-הביתטע האָט דאָס אַ ביסעלע פֿאַרדראָסן :",
+      "gold_tree": "(TOP (IP-MAT (NP-DTV (D דער) (N בעל-הביתטע)) (HVF האָט) (NP-SBJ (D דאָס)) (NP-MSR (D אַ) (N ביסעלע)) (VBN פֿאַרדראָסן) (PUNC :)))",
+      "predicted_tree": null,
+      "valid_syntax": false,
+      "tokens_match": false,
+      "labeled_f1": 0.0,
+      "unlabeled_f1": 0.0,
+      "error": "gave up after 8 rate-limit retries"
+    },
+    {
+      "id": "test.txt:236",
+      "sentence": "אָבער איך האַלט זיך באַ דאָס מײַנע : נײן , און נײן , און נײן ! ב'שום אױפֿן װ'ענין ניט .",
+      "gold_tree": "(TOP (IP-MAT (CONJ אָבער) (NP-SBJ (PRO איך)) (VBF האַלט) (NP-RFL (PRO זיך)) (PP (P באַ) (NP (D דאָס) (PRO$ מײַנע))) (PUNC :) (QTP (INTJP (INTJ נײן) (PUNC ,) (CONJ און) (INTJ נײן) (PUNC ,) (CONJ און) (INTJ נײן) (PUNC !)) (PP (H ב'שום) (H אױפֿן) (H װ'ענין)) (NEG ניט)) (PUNC .)))",
+      "predicted_tree": null,
+      "valid_syntax": false,
+      "tokens_match": false,
+      "labeled_f1": 0.0,
+      "unlabeled_f1": 0.0,
+      "error": "gave up after 8 rate-limit retries"
+    },
+    {
+      "id": "test.txt:611",
+      "sentence": "האָט ער געװאָלט דעם ישיבֿה-בחור געבן on@ @tsu@ @hern , אַז ער זאָל ניט טרינקען אַזױ פֿיל ,",
+      "gold_tree": "(TOP (IP-MAT (HVF האָט) (NP-SBJ (PRO ער)) (MDN געװאָלט) (NP-DTV (D דעם) (N ישיבֿה-בחור)) (VB געבן) (IP-INF (RP on@) (TO @tsu@) (VB @hern) (PUNC ,) (CP-THT (C אַז) (IP-SUB (NP-SBJ (PRO ער)) (MDF זאָל) (NEG ניט) (VB טרינקען) (NP-ACC (QP (ADV אַזױ) (Q פֿיל)))))) (PUNC ,)))",
+      "predicted_tree": null,
+      "valid_syntax": false,
+      "tokens_match": false,
+      "labeled_f1": 0.0,
+      "unlabeled_f1": 0.0,
+      "error": "gave up after 8 rate-limit retries"
+    }
+  ]
+}

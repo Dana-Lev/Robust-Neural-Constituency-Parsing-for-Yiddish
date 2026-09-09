@@ -1,0 +1,61 @@
+[compat] torch.load: weights_only=False for SuPar checkpoints (torch 2.11.0+cu128)
+[device] cpu (requested)
+[adapters] CRFConstituencyParser.MODEL -> AdaptedCRFConstituencyModel (adapter_type=lora)
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+Loading weights:   0%|          | 0/197 [00:00<?, ?it/s]Loading weights: 100%|██████████| 197/197 [00:00<00:00, 18511.47it/s]
+[transformers] [1mXLMRobertaModel LOAD REPORT[0m from: skulick/xlmb-ybc-ck05
+Key                       | Status     | 
+--------------------------+------------+-
+lm_head.dense.weight      | UNEXPECTED | 
+lm_head.layer_norm.bias   | UNEXPECTED | 
+lm_head.dense.bias        | UNEXPECTED | 
+lm_head.layer_norm.weight | UNEXPECTED | 
+lm_head.bias              | UNEXPECTED | 
+pooler.dense.bias         | MISSING    | 
+pooler.dense.weight       | MISSING    | 
+
+Notes:
+- UNEXPECTED:	can be ignored when loading from different task/architecture; not ok if you expect identical arch.
+- MISSING:	those params were newly initialized because missing from the checkpoint. Consider training on your downstream task.
+
+[adapters] adapting XLMRobertaModel (278.0M parameters, 12 layers)
+[adapters] froze 278.04M backbone parameters (input embeddings: 192,001,536 = 192.0M)
+[adapters] LoRA via inject_adapter_in_model: r=16, alpha=32, dropout=0.1, targets=['query', 'value']
+[adapters] 24 LoRA sites, 589,824 LoRA parameters
+
+==================================================================
+TRAINABLE PARAMETER BREAKDOWN
+==================================================================
+  parser head                              11,272,290  ( 90.5%)
+  scalar mix / projection                     589,829  (  4.7%)
+  adapters                                    589,824  (  4.7%)
+------------------------------------------------------------------
+  trainable                                12,451,943
+  total                                   290,495,591
+  trainable fraction                           4.286%
+==================================================================
+
+[adapters] checkpoint keys: 260, model keys: 260
+2026-08-23 13:18:39 INFO Loading the data
+  0%|                  | 0/856 00:00<?, ?it/s 66%|###########9      | 568/856 00:00<00:00, 5677.20it/s                                                           0%|                  | 0/856 00:00<?, ?it/s/home/morg/NLP_2526b/danalev/miniconda3/envs/yiddish/lib/python3.10/site-packages/supar/utils/fn.py:155: UserWarning: Using a non-tuple sequence for multidimensional indexing is deprecated and will be changed in pytorch 2.9; use x[tuple(seq)] instead of x[seq]. In pytorch 2.9 this will be interpreted as tensor index, x[torch.tensor(seq)], which will result either in an error or a different result (Triggered internally at /pytorch/torch/csrc/autograd/python_variable_indexing.cpp:347.)
+  out_tensor[i][[slice(-i, None) if padding_side == 'left' else slice(0, i) for i in tensor.size()]] = tensor
+ 15%|##6               | 127/856 00:00<00:00, 1263.46it/s 32%|#####7            | 272/856 00:00<00:00, 1364.02it/s 48%|########6         | 409/856 00:00<00:00, 1352.27it/s 64%|###########4      | 545/856 00:00<00:00, 1340.93it/s 80%|##############4   | 686/856 00:00<00:00, 1363.14it/s 96%|#################3| 824/856 00:00<00:00, 1367.43it/s                                                         2026-08-23 13:18:40 INFO 
+Dataset(n_sentences=856, n_batches=10, n_buckets=8)
+2026-08-23 13:18:40 INFO Evaluating the dataset
+2026-08-23 13:19:00 INFO loss: 1.3085 - UCM: 57.36% LCM: 45.68% UP: 89.32% UR: 88.85% UF: 89.08% LP: 81.73% LR: 81.29% LF: 81.51%
+2026-08-23 13:19:00 INFO 0:00:20.412066s elapsed, 41.94 Sents/s
+
+==================================================================
+EVALUATION: parser_adapters_lora_seed2  on  data/processed/supar_ready/test.txt
+==================================================================
+  loss            1.3085
+  metric          UCM: 57.36% LCM: 45.68% UP: 89.32% UR: 88.85% UF: 89.08% LP: 81.73% LR: 81.29% LF: 81.51%
+  Labelled Precision          81.73
+  Labelled Recall             81.29
+  Labelled F1                 81.51
+  Unlabelled Precision        89.32
+  Unlabelled Recall           88.85
+  Unlabelled F1               89.08
+  Labelled Complete Match     45.68
+  Unlabelled Complete Match   57.36
+==================================================================

@@ -1,0 +1,23 @@
+[compat] torch.load: weights_only=False for SuPar checkpoints (torch 2.11.0+cu128)
+[device] cpu (requested)
+2026-08-22 18:04:17 INFO Loading the data
+2026-08-22 18:04:17 INFO 
+Dataset(n_sentences=856, n_batches=9, n_buckets=8)
+2026-08-22 18:04:17 INFO Evaluating the dataset
+2026-08-22 18:04:33 INFO loss: 1.3347 - UCM: 43.93% LCM: 31.43% UP: 85.97% UR: 84.54% UF: 85.24% LP: 75.53% LR: 74.27% LF: 74.89%
+2026-08-22 18:04:33 INFO 0:00:15.096511s elapsed, 56.70 Sents/s
+
+==================================================================
+EVALUATION: parser_baseline  on  data/processed/supar_ready/test.txt
+==================================================================
+  loss            1.3347
+  metric          UCM: 43.93% LCM: 31.43% UP: 85.97% UR: 84.54% UF: 85.24% LP: 75.53% LR: 74.27% LF: 74.89%
+  Labelled Precision          75.53
+  Labelled Recall             74.27
+  Labelled F1                 74.89
+  Unlabelled Precision        85.97
+  Unlabelled Recall           84.54
+  Unlabelled F1               85.24
+  Labelled Complete Match     31.43
+  Unlabelled Complete Match   43.93
+==================================================================
