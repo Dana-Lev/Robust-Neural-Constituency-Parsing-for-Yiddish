@@ -27,6 +27,7 @@
 \usepackage{amsmath}
 \usepackage{xcolor}
 \usepackage{enumitem}   % itemsep/topsep options on lists
+\usepackage{xurl}       % let long URLs break across lines in a narrow column
 
 \newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
 % NOTE on Yiddish examples: pdflatex + the ACL template do not handle
@@ -130,6 +131,10 @@ labeled F1 gap to our best parser --- so the problem is not dissolved by scale.
 F1 cannot tell a model that cannot parse from one that ignored the output
 contract.
 \end{itemize}
+
+All code, the scripts that rebuild the corpus, and the raw output behind every
+number reported here are available at
+\url{https://github.com/Dana-Lev/Robust-Neural-Constituency-Parsing-for-Yiddish}.
 
 \section{Background and Related Work}
 
