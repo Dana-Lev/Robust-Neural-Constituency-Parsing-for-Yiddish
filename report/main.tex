@@ -9,9 +9,6 @@
 %   * ACL template, \citet / \citep for all citations
 %   * must include an "AI Disclosure and Reflection" section
 %   * figures as PDF (not png/jpeg), large fonts
-%
-% Every \todo{...} marks something you must write or fill in yourselves.
-% Delete the \todo macro uses before submission.
 % =====================================================================
 \documentclass[11pt]{article}
 
@@ -32,6 +29,7 @@
 \usepackage{xcolor}
 \usepackage{enumitem}   % itemsep/topsep options on lists
 \usepackage{xurl}       % let long URLs break across lines in a narrow column
+\usepackage{float}      % the H float specifier used in the appendix
 
 \newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
 % NOTE on Yiddish examples: pdflatex + the ACL template do not handle
@@ -84,9 +82,9 @@ instability behind it. Its computational treatment took a decisive step with
 \citet{kulick-etal-2022-part}, who built the first robust part-of-speech tagger
 for the language and showed that embeddings trained on the noisy, OCR-derived
 Yiddish Book Center corpus absorb historical spelling variation without manual
-standardisation. That work also named what it could
-not do: a syntactic parser, whose ``greater complexity'' makes the demand for
-gold-standard data and careful modelling ``correspondingly more pressing''.
+standardisation. That work also named what it left undone: a syntactic parser,
+whose ``greater complexity'' makes the demand for gold-standard data and careful
+modelling ``correspondingly more pressing''.
 
 One obstacle it identified is mundane but consequential. Multilingual subword
 vocabularies were not built for Hebrew-script Yiddish, so words shatter into many
@@ -139,6 +137,7 @@ contract.
 All code, the scripts that rebuild the corpus, and the raw output behind every
 number reported here are available at
 \url{https://github.com/Dana-Lev/Robust-Neural-Constituency-Parsing-for-Yiddish}.
+
 
 \section{Background and Related Work}
 
@@ -702,8 +701,8 @@ against our logs, and is our responsibility.
 
 \section{Data and Segmentation Statistics}
 \label{app:data}
-
-\begin{table}[t]
+This appendix provides the full parameter breakdown, corpus split statistics, and subword regularization metrics used in our experiments.
+\begin{table}[H]
 \centering
 \small
 \setlength{\tabcolsep}{4pt}
@@ -731,7 +730,7 @@ this parser several times smaller.}
 \label{tab:params}
 \end{table}
 
-\begin{table}[t]
+\begin{table}[H]
 \centering
 \small
 \setlength{\tabcolsep}{4pt}
@@ -754,7 +753,7 @@ stripped (402 with them); the most frequent are \textsc{np-sbj} (19{,}565),
 \label{tab:data}
 \end{table}
 
-\begin{table}[t]
+\begin{table}[H]
 \centering
 \small
 \setlength{\tabcolsep}{4pt}
