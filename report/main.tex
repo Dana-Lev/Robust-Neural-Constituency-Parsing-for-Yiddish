@@ -15,6 +15,10 @@
 % =====================================================================
 \documentclass[11pt]{article}
 
+% Allow long URLs to break after hyphens as well as slashes. This must be set
+% before acl.sty loads hyperref, and it keeps the repository URL inside the
+% column even in a TeX distribution without xurl.
+\PassOptionsToPackage{hyphens}{url}
 \usepackage{acl}            % remove [review] style options for final version
 \usepackage{times}
 \usepackage{latexsym}
