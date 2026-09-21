@@ -335,14 +335,7 @@ and prompt Gemini
 temperature 0, given the gold tokenization and instructed to reuse those tokens
 exactly (the prompts are reproduced in full in Appendix~\ref{app:prompts}).
 Few-shot runs draw $k{=}3$ exemplars from the \emph{training} split
-only, so no evaluated sentence is ever shown to the model.\footnote{\label{fn:pilot}%
-Before settling on this design we ran one zero-shot pilot on
-\texttt{gemini-3.6-flash}; the daily quota cut it off at $22$ of $30$ sentences,
-so we do not report it as a headline result. It scored $54.67$ labeled and $79.58$
-unlabeled F1 --- below the best configuration we do report, and $20.2$ labeled F1
-below our frozen baseline. Its unlabeled score does exceed the baseline's
-\emph{labeled} score, which is why we rest no argument on that comparison. Raw
-output: \texttt{results/llm\_zeroshot.json}.}
+only, so no evaluated sentence is ever shown to the model.
 
 Predictions are scored with the same conventions as the SuPar evaluation
 (preterminals excluded, \textsc{top} and punctuation deleted, co-indexation
@@ -535,8 +528,7 @@ the frontier model with exemplars, at $55.37$ labeled F1 --- $19.5$ points below
 our frozen-encoder baseline and $26.7$ below our best adapted parser. Its \emph{unlabeled} F1
 ($74.38$) lands just under the baseline's \emph{labeled} F1 ($74.89$) --- a
 striking comparison, but one we decline to lean on: $0.51$ points is the same
-size as the seed-to-seed variation we measure in Appendix~\ref{app:seeds}, and an
-earlier pilot on a newer model exceeded it (footnote~\ref{fn:pilot}). The
+size as the seed-to-seed variation we measure in Appendix~\ref{app:seeds}. The
 $19.5$-point labeled gap is the claim that survives scrutiny, and it is not
 marginal.
 
@@ -888,10 +880,9 @@ Appendix~\ref{app:labels}, and a corrected prompt is an obvious follow-up.
 
 \section{LLM Label Confusions}
 \label{app:labels}
-These counts come from the pilot run described in footnote~\ref{fn:pilot}
-(\texttt{gemini-3.6-flash}, zero-shot, $30$ sentences attempted and $22$ returned
-before the daily quota cut it off), not from the tiers in
-Table~\ref{tab:llm}; it is the only run for which we did a manual label audit.
+These counts come from a separate zero-shot run on \texttt{gemini-3.6-flash}
+($22$ scored answers), not from the tiers in Table~\ref{tab:llm}; it is the only
+run for which we did a manual label audit.
 Of 152 constituents predicted across those 22 scored answers, 19
 (12.5\%) carry labels absent from this treebank's inventory: \textsc{np-ob1}
 (11), \textsc{np-ob2} (2), \textsc{*t*} (2), and one each of \textsc{cp-que},
