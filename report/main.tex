@@ -65,8 +65,7 @@ Historical Yiddish. They diverge sharply: resampling segmentation moves labeled 
 by $+0.43$, inside our measured seed-to-seed variation, while adapters move it by
 $+7.1$ --- two architecturally unrelated adapter families landing within $0.07$ F1
 of each other for under $0.9$M parameters --- and combining both is slightly worse
-than adapters alone. The bottleneck is therefore not how Yiddish words are split
-but that the encoder is not permitted to adapt. We additionally test whether
+than adapters alone. Under our tested intervention, segmentation regularization provides little benefit, whereas allowing encoder adaptation provides a substantial benefit. We additionally test whether
 general-purpose models already solve the problem: across two model tiers and
 matched zero-/few-shot conditions the best frontier configuration reaches $55.4$
 labeled F1 against our parser's $74.9$, and most of the apparent benefit of
@@ -494,7 +493,7 @@ inventory --- the brackets are largely right and the labels are the harder
 problem, the same asymmetry the LLM control shows far more severely. And the
 backbone is frozen, so this is a floor on what the encoder already knows rather
 than a ceiling on the architecture.
-\paragraph{Segmentation noise is not the bottleneck.} Resampling subword
+\paragraph{The tested stochastic resegmentation intervention does not produce a measurable improvement.} Resampling subword
 segmentation during training moves labeled F1 by $+0.43$ points, from $74.89$ to
 $75.32$ (Table~\ref{tab:main}). The intervention was verified active in that run's
 log, so this measures the idea rather than a misconfiguration. Complete-match rates
@@ -588,7 +587,7 @@ of historical Yiddish.
 % =====================================================================
 \section{Discussion}
 
-\paragraph{The fragmentation framing was the wrong diagnosis.} The premise we
+\paragraph{fragmentation alone does not appear to be the dominant limitation under our tested setup.} The premise we
 inherited was that Yiddish parsing is held back by subword fragmentation, and that
 the response is to repair the vocabulary. Our two interventions separate that
 premise into its parts and disagree sharply. Perturbing segmentation --- the most
