@@ -121,8 +121,8 @@ Our contributions are:
 \item Two parameter-efficient treatments of subword fragmentation for
 constituency parsing, as runtime patches over SuPar
 \citep{zhang-etal-2020-fast} that leave the library untouched. They disagree
-decisively --- resampling gains $0.43$ labeled F1 where adapters gain $7.1$ ---
-relocating the bottleneck from the tokenizer to the frozen encoder.
+decisively --- resampling gains $0.43$ labeled F1 where adapters gain $7.1$
+(Figure~\ref{fig:lf}) --- relocating the bottleneck from the tokenizer to the frozen encoder.
 \item An internal replication of that gain across two unrelated adapter families
 agreeing to $0.07$ F1, at under $0.9$M trainable parameters and no pre-training.
 \item A frontier-LLM control on the same test data and metric, showing a $26.7$
@@ -132,6 +132,18 @@ labeled F1 gap to our best parser --- so the problem is not dissolved by scale.
 F1 cannot tell a model that cannot parse from one that ignored the output
 contract.
 \end{itemize}
+
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/lf_by_cell.pdf}
+\caption{Labeled F1 on the PPCHY test set for the five parser cells of
+Table~\ref{tab:main}, all over the same frozen encoder. Diamonds are the
+second-seed replications of Appendix~\ref{app:seeds}; the dashed line is the
+baseline. Resampling segmentation moves the baseline by less than its
+seed-to-seed spread; either adapter family moves it by seven points.}
+\label{fig:lf}
+\end{figure}
 
 All code, the scripts that rebuild the corpus, and the raw output behind every
 number reported here are available at
@@ -368,15 +380,9 @@ Appendix~\ref{app:hyper}.
 \paragraph{Hardware and environment.} A single GPU per run on the shared,
 preemptible \texttt{studentkillable} partition, which mixes NVIDIA RTX 2080
 ($8$\,GB) and TITAN Xp ($12$\,GB) cards; each cell is an independent
-resubmittable job rather than one long run. Three properties of this environment
-had to be handled rather than worked around, and our entrypoints resolve each
-explicitly and print the device and a kernel-launch test before training. Current
-PyTorch wheels build no kernels for the TITAN Xp's compute capability, so a job
-reports a working GPU then fails at its first kernel launch; \texttt{torch.load}
-now defaults to \texttt{weights\_only=True} and refuses SuPar's checkpoints, which
-embed a config object and a dill-pickled transform; and GPU-trained checkpoints
-carry CUDA storage tags that need an explicit \texttt{map\_location} in a CPU-only
-process.
+resubmittable job rather than one long run. Every entrypoint prints its device
+and runs a kernel-launch test before training; the environment-specific
+handling this required is documented in the repository rather than here.
 
 \paragraph{Verifying that each intervention is active.} Both interventions can
 fail silently, so every run asserts its own configuration in the log: adapter
