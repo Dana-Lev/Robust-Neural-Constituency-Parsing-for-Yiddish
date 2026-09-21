@@ -7,26 +7,27 @@ sentences (same `--seed`, same `--n`). Raw records in `llm_*.json`;
 | Model | Cond. | n | Cov. | Valid | Tok | LF | LF(tok-faithful) | UF |
 |---|---|---:|---:|---:|---:|---:|---:|---:|
 | gemini-3.5-flash | zero-shot | 20 | 100 | 95.0 | 70.0 | 45.53 | 59.65 | 64.23 |
-| gemini-3.5-flash | 3-shot | 20 | 95 | 94.7 | 84.2 | **54.24** | 63.39 | 73.73 |
+| gemini-3.5-flash | 3-shot | 20 | 100 | 95.0 | 85.0 | **55.37** | 64.55 | 74.38 |
 | gemini-3.5-flash-lite | zero-shot | 100 | 100 | 86.0 | 44.0 | 24.74 | 46.41 | 42.46 |
 | gemini-3.5-flash-lite | 3-shot | 100 | 100 | 86.0 | 71.0 | 37.76 | 51.35 | 54.34 |
 | gemini-3.6-flash (pilot) | zero-shot | 30 | 73 | 100.0 | 95.5 | 54.67 | 55.83 | 79.58 |
 
 ## Three findings
 
-**1. Nothing approaches a trained parser.** Best cell is 54.24 LF — about 30
-points below the frozen-encoder baseline. Even its *unlabeled* F1 (73.73) is
-below the baseline's *labeled* F1. The custom parser is not made redundant.
+**1. Nothing approaches a trained parser.** Best cell is 55.37 LF — 19.5
+points below the frozen-encoder baseline (74.89) and 26.7 below the best
+adapted parser. Even its *unlabeled* F1 (74.38) is below the baseline's
+*labeled* F1. The custom parser is not made redundant.
 
-**2. Exemplars help, and it replicates across tiers.** LF +8.7 (frontier),
+**2. Exemplars help, and it replicates across tiers.** LF +9.8 (frontier),
 +13.0 (Lite). Per sentence, 3-shot beats zero-shot on 48/100 Lite sentences and
-loses on 20 (sign test p < 0.001); frontier 9/19 vs 2 (p = 0.07).
+loses on 20 (sign test p < 0.001); frontier 10/20 vs 2 (p = 0.039).
 
 **3. Most of that gain is instruction-following, not parsing.** Token fidelity
-rises 44% → 71% (Lite) and 70% → 84% (frontier). Answers that fail it score near
+rises 44% → 71% (Lite) and 70% → 85% (frontier). Answers that fail it score near
 the floor (13.9 LF on Lite vs 51.2 for faithful ones) — a tree over different
 terminals cannot align to the gold spans at all. Restricting to token-faithful
-answers shrinks the few-shot gain from +13.0 to +4.9 (Lite) and +8.7 to +3.7
+answers shrinks the few-shot gain from +13.0 to +4.94 (Lite) and +9.8 to +4.90
 (frontier). The exemplars mainly teach the *output contract*.
 
 This is a methodological point worth stating in the paper: an LLM parsing
@@ -35,10 +36,10 @@ follow the output format".
 
 ## Caveats
 
-- The frontier tier is capped at 20 requests/day, so n=20 and the paired sign
-  test only reaches p=0.07. The Lite tier at n=100 is where the effect is clear.
-- The 3-shot frontier run returned 19/20 (daily cap hit on the last request).
-  Top up with `--resume` for 1 request.
+- The frontier tier is capped at 20 requests/day, so n=20 per condition. Both
+  paired tests reach significance, but the frontier interval is wide; the Lite
+  tier at n=100 estimates the effect far more precisely.
+- All four reported conditions returned 100% of their requests.
 - The `gemini-3.6-flash` row is an early pilot at 73% coverage on a different
   sample; kept for reference, not comparable to the matched pairs.
 - Model versions change without notice; record the access date in the report.

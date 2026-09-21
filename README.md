@@ -53,7 +53,7 @@ seed. Combining them is *worse* than adapters alone.
 > The bottleneck is not how Yiddish words are split. It is that the encoder is
 > not permitted to adapt.
 
-**Frontier-LLM control.** The best of five Gemini configurations reaches 55.37
+**Frontier-LLM control.** The best of four Gemini configurations reaches 55.37
 labeled F1 on the same sentences under the same metric — 19.5 points below the
 frozen baseline and 26.7 below the best adapted parser. Most of the apparent
 benefit of in-context examples turns out to be improved instruction-following

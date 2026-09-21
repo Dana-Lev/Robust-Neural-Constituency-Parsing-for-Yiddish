@@ -275,7 +275,8 @@ report \texttt{maxmatch} only, and the code raises rather than falling back
 silently --- a silent fallback would report two identically-configured cells
 under different names.
 
-\paragraph{Where the resampling happens.} This is the load-bearing detail.
+\paragraph{Where the resampling happens.} This detail decides whether the method
+regularizes at all.
 SuPar's \texttt{Dataset.build} numericalises the whole corpus once before the
 first epoch and its collate function merely stacks pre-computed tensors, so a
 stochastic tokenizer handed to the field alone would be sampled once per sentence
@@ -474,7 +475,6 @@ perturbs roughly a third of tokens and leaves single-piece words untouched by
 construction.
 
 
-\label{sec:results-llm}
 \paragraph{The frozen-encoder baseline.} Training only the parser head over a
 completely frozen encoder reaches $74.89$ labeled F1 and $85.24$ unlabeled F1 on
 the PPCHY test set, parsing $31.4\%$ of test sentences perfectly under the full
@@ -494,7 +494,7 @@ move slightly more ($+1.86$ labeled), consistent with mild regularisation, but
 nothing suggests a parser over a frozen multilingual encoder is meaningfully
 limited by \emph{how} Yiddish words are split.
 
-\paragraph{Encoder capacity is.} Both adapter families produce a large gain:
+\paragraph{Encoder capacity is the bottleneck.} Both adapter families produce a large gain:
 $+7.13$ labeled F1 for LoRA ($82.02$) and $+7.20$ for Pfeiffer bottlenecks
 ($82.09$). The effect on whole-sentence accuracy is larger still --- labeled
 complete match rises from $31.43\%$ to $46.73\%$, almost half again as many test
@@ -519,7 +519,9 @@ it injects costs a little. Under the reading we develop below that is expected -
 the adapters learn to use the encoder's representations of the canonical
 segmentation, and perturbing it makes their target less stable.
 
-\paragraph{The LLM control.} Table~\ref{tab:llm} reports two model tiers, each
+\paragraph{The LLM control.}
+\label{sec:results-llm}
+Table~\ref{tab:llm} reports two model tiers, each
 with a matched zero-shot and 3-shot condition over the same sentences. Three
 findings hold across both tiers.
 
@@ -527,7 +529,7 @@ First, \textbf{no configuration approaches a trained parser.} The best cell is
 the frontier model with exemplars, at $55.37$ labeled F1 --- $19.5$ points below
 our frozen-encoder baseline and $26.7$ below our best adapted parser. Its \emph{unlabeled} F1
 ($74.38$) lands just under the baseline's \emph{labeled} F1 ($74.89$) --- a
-striking comparison, but one we decline to lean on: $0.51$ points is the same
+notable comparison, but not one we rely on: $0.51$ points is the same
 size as the seed-to-seed variation we measure in Appendix~\ref{app:seeds}. The
 $19.5$-point labeled gap is the claim that survives scrutiny, and it is not
 marginal.
@@ -546,7 +548,7 @@ $13.9$ mean per-sentence LF against $51.2$ for faithful answers; all other
 figures here are corpus-level). Restricting the comparison to token-faithful answers
 shrinks the few-shot gain from $+13.0$ to $+4.94$ on Lite and from $+9.8$ to
 $+4.90$ on the frontier tier. That the two residuals agree to $0.04$ points, while
-the raw gains differ by more than three, is the clearest statement of the result:
+the raw gains differ by more than three, is the most direct evidence for the result:
 the part of the improvement that is actually about parsing is small, equal across
 tiers, and swamped in the raw numbers by how much better each model becomes at
 following the output contract.
@@ -579,7 +581,7 @@ of historical Yiddish.
 % =====================================================================
 \section{Discussion}
 
-\paragraph{fragmentation alone does not appear to be the dominant limitation under our tested setup.} The premise we
+\paragraph{Fragmentation is not the dominant limitation in our setup.} The premise we
 inherited was that Yiddish parsing is held back by subword fragmentation, and that
 the response is to repair the vocabulary. Our two interventions separate that
 premise into its parts and disagree sharply. Perturbing segmentation --- the most
