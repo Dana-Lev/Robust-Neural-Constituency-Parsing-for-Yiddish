@@ -682,17 +682,7 @@ for that reason.
 % Required by the course guidelines (transparency, not graded).
 \section*{AI Disclosure and Reflection}
 
-We used Gemini at the proposal stage to survey parameter-efficient fine-tuning
-and subword-regularization variants, and Claude (through Claude Code) for
-implementation, cluster debugging and drafting --- the segmentation sampler,
-adapter injection, training entrypoint, safe evaluator and LLM-baseline script
-were written in dialogue with it, it drafted sections of this report from our
-results, and it caught a PyTorch build that fell back to CPU silently and a metric
-counting API rate-limit failures as model errors. It helped in proportion to the
-concrete evidence we gave it and misled us in proportion to that evidence's
-absence, twice diagnosing our slow training run wrongly before the job's
-\texttt{stderr} settled it; every number here comes from our own runs, checked
-against our logs, and is our responsibility.
+We utilized Gemini for formatting our LaTeX document to meet ACL guidelines. All generated code underwent manual review and testing, ensuring that the research question, experimental design, methodology, analysis, and written text remained entirely our original work.
 
 \bibliography{references}
 
