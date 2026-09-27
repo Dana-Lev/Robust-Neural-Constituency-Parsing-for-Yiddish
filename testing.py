@@ -420,7 +420,7 @@ def main():
     ap.add_argument("--n", type=int, default=30, help="Number of test sentences to sample.")
     ap.add_argument("--max-len", type=int, default=40, help="Skip sentences longer than this.")
     ap.add_argument("--shots", type=int, default=0, help="Number of few-shot exemplars (0 = zero-shot).")
-    ap.add_argument("--model", default="gemini-3.6-flash",
+    ap.add_argument("--model", default="gemini-3.5-flash",
                     help="Gemini model id (check availability for your key).")
     ap.add_argument("--seed", type=int, default=1, help="Sampling seed, for reproducibility.")
     ap.add_argument("--sleep", type=float, default=13.0,

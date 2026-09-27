@@ -10,7 +10,6 @@ sentences (same `--seed`, same `--n`). Raw records in `llm_*.json`;
 | gemini-3.5-flash | 3-shot | 20 | 100 | 95.0 | 85.0 | **55.37** | 64.55 | 74.38 |
 | gemini-3.5-flash-lite | zero-shot | 100 | 100 | 86.0 | 44.0 | 24.74 | 46.41 | 42.46 |
 | gemini-3.5-flash-lite | 3-shot | 100 | 100 | 86.0 | 71.0 | 37.76 | 51.35 | 54.34 |
-| gemini-3.6-flash (pilot) | zero-shot | 30 | 73 | 100.0 | 95.5 | 54.67 | 55.83 | 79.58 |
 
 ## Three findings
 
@@ -40,8 +39,6 @@ follow the output format".
   paired tests reach significance, but the frontier interval is wide; the Lite
   tier at n=100 estimates the effect far more precisely.
 - All four reported conditions returned 100% of their requests.
-- The `gemini-3.6-flash` row is an early pilot at 73% coverage on a different
-  sample; kept for reference, not comparable to the matched pairs.
 - Model versions change without notice; record the access date in the report.
 
 ## Reproduce
