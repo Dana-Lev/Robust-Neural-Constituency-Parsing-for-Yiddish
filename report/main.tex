@@ -660,9 +660,13 @@ not transfer to modern Yiddish; we test one encoder and one parsing formalism.
 The LLM control uses 20 sentences per frontier condition and 100 per Lite
 condition, bounded by free-tier daily caps. Both paired comparisons reach
 significance ($p=0.039$ and $p<0.001$), but the frontier interval is wide at
-$n{=}20$, and the effect is estimated far more precisely on the Lite tier. LLM results also depend on the prompt and on a model version that
+$n{=}20$, and the effect is estimated far more precisely on the Lite tier. Our
+frontier tier is \texttt{gemini-3.5-flash}: a free-tier key returns a zero
+request allocation for every pro-tier model, and newer flash releases appeared
+after these runs, so the models we evaluate are not the strongest the provider
+offers. LLM results also depend on the prompt and on a model version that
 providers change without notice; we report the exact model identifier and date
-for that reason. 
+for that reason.
 
 % Required by the course guidelines (transparency, not graded).
 \section*{AI Disclosure and Reflection}
