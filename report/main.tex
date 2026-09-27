@@ -559,21 +559,6 @@ the part of the improvement that is actually about parsing is small, equal acros
 tiers, and swamped in the raw numbers by how much better each model becomes at
 following the output contract.
 
-Where labels do go wrong, the errors are systematic rather than random. In a
-zero-shot pilot run (Appendix~\ref{app:labels}), only 12.5\% of predicted
-constituents carried a label outside this treebank's 226-label inventory, and
-those were dominated by \textsc{np-ob1} and \textsc{np-ob2} -- labels from the
-Penn historical family, but from a different member of it than this PPCHY
-release, which marks the same arguments \textsc{np-acc} and \textsc{np-dtv}. The
-models have absorbed Penn-style historical annotation in general and select the
-wrong variant of it, rather than failing to analyse Yiddish; the 3-shot
-conditions visibly adopt this corpus's inventory instead.
-
-Even read charitably, none of this displaces a trained parser: the best cell's
-$55.37$ labeled F1 is $19.5$ points below our baseline
-(Table~\ref{tab:main}), and even its \emph{unlabeled} score does not reach the
-baseline's \emph{labeled} score.
-
 The few-shot conditions answer the question that motivated running them. Three
 examples do move labeled F1 substantially, so a meaningful part of the zero-shot
 deficit is conventional rather than linguistic --- the models know Penn-style
@@ -871,21 +856,6 @@ merge, add, or drop tokens. Put exactly one POS preterminal above each token.
 
 Rule 3 is the one the models most often violate, and
 Section~\ref{sec:results-llm} treats compliance with it as a separate measurement
-from parse quality. We note that the instruction names \textsc{np-ob1} as an
-example function tag, which is a label from a sibling Penn corpus rather than this
-PPCHY release; this may contribute to the label-variant confusions in
-Appendix~\ref{app:labels}, and a corrected prompt is an obvious follow-up.
-
-\section{LLM Label Confusions}
-\label{app:labels}
-These counts come from a separate zero-shot run on \texttt{gemini-3.6-flash}
-($22$ scored answers), not from the tiers in Table~\ref{tab:llm}; it is the only
-run for which we did a manual label audit.
-Of 152 constituents predicted across those 22 scored answers, 19
-(12.5\%) carry labels absent from this treebank's inventory: \textsc{np-ob1}
-(11), \textsc{np-ob2} (2), \textsc{*t*} (2), and one each of \textsc{cp-que},
-\textsc{np-ob1-rsp}, \textsc{np-dat} and \textsc{cp-que-spe}. These are
-Penn-historical labels used by sibling corpora; this PPCHY release writes the
-corresponding arguments \textsc{np-acc} and \textsc{np-dtv}.
+from parse quality.
 
 \end{document}
